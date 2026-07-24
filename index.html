@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏆 合宿レク イベント進行ツール</title>
+<style>
+/* ============================================================
+   合宿レク イベント進行＆得点管理ツール
+   単一ファイル / オフライン動作 / 投影対応
+   ============================================================ */
+:root{
+  --bg:#0b1020; --bg2:#131a33; --panel:#182142; --panel2:#1f2a52;
+  --line:#2c3a6e; --text:#eef2ff; --muted:#9aa6d6;
+  --accent:#ffd23f; --good:#31d97a; --bad:#ff5d6c;
+  --t1:#ff6b6b; --t2:#4da3ff; --t3:#33d69f; --t4:#ffa53d; --t5:#c084fc;
+  --shadow:0 10px 40px rgba(0,0,0,.45);
+  --radius:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,sans-serif;
+  background:radial-gradient(1200px 800px at 20% -10%,#1b2550 0%,transparent 60%),
+             radial-gradient(1000px 700px at 100% 0%,#241a4d 0%,transparent 55%),
+             var(--bg);
+  color:var(--text); overflow-x:hidden; min-height:100vh;
+}
+button{font-family:inherit;cursor:pointer;border:none;color:inherit;font-weight:700}
+input,select{font-family:inherit}
+.hidden{display:none !important}
+
+/* ---------- App shell ---------- */
+.topbar{
+  display:flex;align-items:center;gap:14px;padding:12px 20px;
+  background:rgba(12,17,36,.72);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50;
+}
+.topbar h1{font-size:19px;letter-spacing:.5px;white-space:nowrap}
+.topbar h1 .sub{font-size:12px;color:var(--muted);font-weight:600;margin-left:8px}
+.spacer{flex:1}
+.tbtn{
+  background:var(--panel);border:1px solid var(--line);padding:9px 15px;border-radius:12px;
+  font-size:14px;display:inline-flex;align-items:center;gap:7px;transition:.15s;
+}
+.tbtn:hover{background:var(--panel2);transform:translateY(-1px)}
+.tbtn.primary{background:linear-gradient(135deg,#ffd23f,#ff9d3d);color:#3a2600}
+.total-pill{font-size:13px;color:var(--muted);background:var(--panel);border:1px solid var(--line);
+  padding:7px 13px;border-radius:20px;white-space:nowrap}
+
+/* ---------- Layout ---------- */
+.wrap{display:grid;grid-template-columns:1fr 460px;gap:18px;padding:18px;max-width:1700px;margin:0 auto}
+@media(max-width:1150px){.wrap{grid-template-columns:1fr}}
+
+/* ---------- Stage (投影エリア) ---------- */
+.stage{
+  background:linear-gradient(160deg,var(--bg2),#0d132a);
+  border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+  min-height:560px;padding:26px;position:relative;overflow:hidden;
+}
+.stage-label{position:absolute;top:14px;right:18px;font-size:12px;color:var(--muted);
+  letter-spacing:2px;font-weight:700;opacity:.7}
+
+/* ---------- Control dock ---------- */
+.dock{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.tabs{display:flex;border-bottom:1px solid var(--line);background:rgba(0,0,0,.15)}
+.tab{flex:1;padding:13px 6px;background:transparent;color:var(--muted);font-size:13px;
+  border-bottom:3px solid transparent;transition:.15s}
+.tab.active{color:var(--text);border-bottom-color:var(--accent);background:rgba(255,210,63,.06)}
+.tab:hover{color:var(--text)}
+.panel{padding:18px;overflow-y:auto;max-height:calc(100vh - 190px)}
+.panel h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.hint{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px}
+
+/* ---------- Scoreboard ---------- */
+.board-title{text-align:center;font-size:clamp(22px,3vw,40px);font-weight:800;margin-bottom:6px;
+  background:linear-gradient(90deg,#ffd23f,#ff9d3d,#ff6b9d);-webkit-background-clip:text;background-clip:text;color:transparent}
+.board-sub{text-align:center;color:var(--muted);font-size:14px;margin-bottom:22px}
+.rankrow{
+  display:flex;align-items:center;gap:16px;padding:14px 18px;margin-bottom:12px;border-radius:16px;
+  background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+  border:1px solid var(--line);position:relative;transition:transform .55s cubic-bezier(.2,.9,.3,1.2);
+}
+.rankrow .rank{font-size:clamp(26px,3vw,44px);font-weight:900;width:64px;text-align:center;flex:none}
+.rankrow .medal{font-size:clamp(28px,3.2vw,46px);width:64px;text-align:center;flex:none}
+.rankrow .tname{font-size:clamp(18px,2.1vw,30px);font-weight:800;flex:none;width:clamp(150px,16vw,240px)}
+.rankrow .tmembers{font-size:12px;color:var(--muted);margin-top:3px;font-weight:600}
+.rankrow .barwrap{flex:1;height:26px;background:rgba(0,0,0,.28);border-radius:14px;overflow:hidden;position:relative}
+.rankrow .bar{height:100%;border-radius:14px;transition:width .8s cubic-bezier(.2,.9,.3,1);min-width:2px;
+  box-shadow:0 0 20px rgba(255,255,255,.15) inset}
+.rankrow .score{font-size:clamp(26px,3vw,46px);font-weight:900;width:clamp(110px,11vw,150px);text-align:right;flex:none;
+  font-variant-numeric:tabular-nums}
+.rankrow.leader{border-color:var(--accent);box-shadow:0 0 34px rgba(255,210,63,.28)}
+.flash-up{animation:flashUp .9s ease}
+@keyframes flashUp{0%{background:rgba(49,217,122,.5)}100%{}}
+.flash-down{animation:flashDown .9s ease}
+@keyframes flashDown{0%{background:rgba(255,93,108,.4)}100%{}}
+
+/* podium (result) */
+.podium{display:flex;justify-content:center;align-items:flex-end;gap:22px;margin:10px 0 26px}
+.pod{display:flex;flex-direction:column;align-items:center;gap:8px}
+.pod .pcap{font-size:44px}
+.pod .pname{font-weight:800;font-size:clamp(16px,1.8vw,24px)}
+.pod .pscore{font-weight:900;font-size:clamp(20px,2.4vw,32px);color:var(--accent)}
+.pod .pblock{width:clamp(90px,10vw,150px);border-radius:14px 14px 0 0;display:flex;align-items:flex-start;
+  justify-content:center;padding-top:10px;font-size:34px;font-weight:900;color:#0009}
+.pod.p1 .pblock{height:190px;background:linear-gradient(180deg,#ffe27a,#f5b301)}
+.pod.p2 .pblock{height:140px;background:linear-gradient(180deg,#e6ecff,#aeb8d8)}
+.pod.p3 .pblock{height:105px;background:linear-gradient(180deg,#ffcf9e,#d98b4a)}
+
+/* ---------- Timer ---------- */
+.timer-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:480px}
+.timer-label{font-size:clamp(18px,2.5vw,30px);color:var(--muted);font-weight:700;margin-bottom:6px}
+.timer-num{font-size:clamp(120px,26vw,340px);font-weight:900;line-height:1;font-variant-numeric:tabular-nums;
+  letter-spacing:-4px;text-shadow:0 0 60px rgba(255,210,63,.25)}
+.timer-num.warn{color:var(--accent)}
+.timer-num.danger{color:var(--bad);animation:pulse .5s infinite alternate}
+@keyframes pulse{to{transform:scale(1.06)}}
+.timer-done{font-size:clamp(50px,10vw,130px);font-weight:900;color:var(--accent);animation:pop .4s}
+@keyframes pop{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
+
+/* ---------- Topic (illustration) ---------- */
+.topic-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:480px;text-align:center}
+.topic-count{color:var(--muted);font-size:18px;font-weight:700;margin-bottom:14px}
+.topic-set{color:var(--accent);font-size:16px;font-weight:700;margin-bottom:20px;letter-spacing:1px}
+.topic-answer{font-size:clamp(48px,9vw,120px);font-weight:900;
+  background:linear-gradient(90deg,#ffd23f,#ff9d3d);-webkit-background-clip:text;background-clip:text;color:transparent}
+.topic-hidden{font-size:clamp(60px,12vw,160px);font-weight:900;color:var(--muted);letter-spacing:20px}
+
+/* ---------- Gacha ---------- */
+.gacha-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:480px;text-align:center}
+.gacha-title{font-size:clamp(24px,3vw,40px);font-weight:900;margin-bottom:24px;
+  background:linear-gradient(90deg,#ff6b9d,#ffd23f);-webkit-background-clip:text;background-clip:text;color:transparent}
+.reel{width:min(80%,640px);height:150px;overflow:hidden;border:4px solid var(--accent);border-radius:20px;
+  background:#0009;position:relative;box-shadow:0 0 50px rgba(255,210,63,.3)}
+.reel::before,.reel::after{content:"";position:absolute;left:0;right:0;height:40px;z-index:2;pointer-events:none}
+.reel::before{top:0;background:linear-gradient(#000c,transparent)}
+.reel::after{bottom:0;background:linear-gradient(transparent,#000c)}
+.reel-track{display:flex;flex-direction:column;transition:none}
+.reel-item{height:150px;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(24px,4vw,52px);font-weight:900;flex:none;white-space:nowrap;padding:0 24px;
+  overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.gacha-result{margin-top:22px;font-size:clamp(30px,5vw,70px);font-weight:900;color:var(--accent);
+  min-height:80px;display:flex;align-items:center;gap:14px}
+.gacha-win-team{font-size:clamp(18px,2.2vw,30px);color:var(--muted);font-weight:700;margin-top:6px}
+
+/* ---------- Score control cards ---------- */
+.teamctl{border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:12px;background:rgba(0,0,0,.14)}
+.teamctl-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.dot{width:16px;height:16px;border-radius:50%;flex:none}
+.teamctl-name{font-weight:800;font-size:15px}
+.teamctl-score{margin-left:auto;font-weight:900;font-size:22px;font-variant-numeric:tabular-nums}
+.btnrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.btnrow .lbl{font-size:11px;color:var(--muted);width:52px;display:flex;align-items:center;font-weight:700}
+.pbtn{background:var(--panel2);border:1px solid var(--line);padding:7px 11px;border-radius:9px;font-size:13px;transition:.12s}
+.pbtn:hover{transform:translateY(-1px);background:#26326a}
+.pbtn.good{background:rgba(49,217,122,.16);border-color:rgba(49,217,122,.4)}
+.pbtn.mid{background:rgba(255,210,63,.14);border-color:rgba(255,210,63,.4)}
+.pbtn.sub{background:rgba(255,93,108,.14);border-color:rgba(255,93,108,.4)}
+.custom-in{width:58px;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:6px;border-radius:8px;text-align:center}
+
+/* generic form bits */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:700}
+.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);
+  padding:10px;border-radius:10px;font-size:14px}
+.bigbtn{width:100%;padding:13px;border-radius:12px;font-size:15px;background:linear-gradient(135deg,#ffd23f,#ff9d3d);color:#3a2600;margin-top:4px}
+.bigbtn.spin{background:linear-gradient(135deg,#ff6b9d,#c084fc);color:#fff}
+.bigbtn:disabled{opacity:.5;cursor:not-allowed}
+.ghostbtn{width:100%;padding:11px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:14px;margin-top:8px}
+.dangerbtn{background:rgba(255,93,108,.16);border:1px solid rgba(255,93,108,.4)}
+
+/* history / lists */
+.log{font-size:12px;color:var(--muted);max-height:180px;overflow-y:auto;border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.logrow{padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.06);display:flex;gap:8px}
+.logrow .lt{color:#7c88bd;flex:none}
+.prizerow{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-radius:10px;margin-bottom:7px;background:rgba(0,0,0,.12)}
+.prizerow .pn{flex:1;font-size:14px;font-weight:700}
+.prizerow .pq{font-size:12px;color:var(--muted)}
+.prizerow .rm{background:rgba(255,93,108,.16);border:1px solid rgba(255,93,108,.35);border-radius:8px;padding:5px 9px;font-size:12px}
+.scene-btns{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.scene-btn{flex:1;min-width:70px;padding:10px 6px;border-radius:11px;background:var(--panel2);border:1px solid var(--line);font-size:13px}
+.scene-btn.active{background:linear-gradient(135deg,#4da3ff,#33d69f);color:#062}
+.tt-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.08);font-size:13px}
+.tt-row .tt-time{color:var(--accent);font-weight:800;width:110px;flex:none}
+.mini{font-size:12px;color:var(--muted);margin-top:6px}
+.chip{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:12px;margin:2px}
+
+/* present mode fills screen */
+body.present .topbar,body.present .dock{display:none}
+body.present .wrap{grid-template-columns:1fr;padding:0;max-width:none}
+body.present .stage{min-height:100vh;border:none;border-radius:0}
+canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
+.footer{grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;padding:6px}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+
+<div class="topbar">
+  <h1>🏆 合宿レク <span class="sub">イベント進行＆得点管理</span></h1>
+  <div class="spacer"></div>
+  <span class="total-pill" id="totalPill">合計 0 / 1750pt</span>
+  <button class="tbtn" id="btnPresent">🖥 投影ウィンドウ</button>
+  <button class="tbtn" id="btnFull">⛶ 全画面</button>
+</div>
+
+<div class="wrap">
+  <!-- ============ STAGE ============ -->
+  <div class="stage" id="stage">
+    <div class="stage-label" id="stageLabel">SCOREBOARD</div>
+    <div id="stageBody"></div>
+  </div>
+
+  <!-- ============ DOCK ============ -->
+  <div class="dock">
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="score">🎯 得点</button>
+      <button class="tab" data-tab="timer">⏱ タイマー</button>
+      <button class="tab" data-tab="topic">🎨 お題</button>
+      <button class="tab" data-tab="gacha">🎁 ガチャ</button>
+      <button class="tab" data-tab="info">📋 進行</button>
+    </div>
+    <div class="panel" id="panel"></div>
+  </div>
+
+  <div class="footer">ダブルクリックで起動 / データはこのブラウザに自動保存されます</div>
+</div>
+
+<script>
+/* ================================================================
+   DATA — PDFの内容をそのまま初期値に
+   ================================================================ */
+const TEAM_COLORS = ['#ff6b6b','#4da3ff','#33d69f','#ffa53d','#c084fc'];
+const DEFAULT_TEAMS = [
+  {name:'チーム①', members:['澤井','和田','清水','津村','ともくん']},
+  {name:'チーム②', members:['土屋','津久井','むすびちゃん','佐藤（圭）','斉藤']},
+  {name:'チーム③', members:['山﨑先生','みりちゃん','榎本','渡邊（真）']},
+  {name:'チーム④', members:['みちるちゃん','鍵谷','御船','矢口','倉田']},
+  {name:'チーム⑤', members:['渡邉（達）','伊藤','野尻','佐藤（早）']},
+];
+// テーマイラスト当て お題（PDFの3セット＝15問）
+const TOPICS = [
+  {set:'セット① 歴史上の人物（日本）', items:['聖徳太子','織田信長','宮本武蔵','杉田玄白','坂本龍馬']},
+  {set:'セット② 歴史上の人物（世界）', items:['ツタンカーメン','ナポレオン','モーツアルト','ザビエル','アインシュタイン']},
+  {set:'セット③ 社内のあの人', items:['藤沼','中野さん','野尻さん','達生さん','澤井さん']},
+];
+// チャレンジゲーム 5競技
+const CHALLENGES = ['腕相撲','片足立ち','だるまさんが転んだ','10秒ストップ','牛乳早飲み'];
+const RANK_POINTS = [10,8,6,4,2]; // 1位〜5位
+const MAX_TOTAL = 350; // 1チーム最大
+
+/* ================================================================
+   STATE
+   ================================================================ */
+const KEY='rectool.state.v3';
+const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('rectool') : null;
+const isPresent = new URLSearchParams(location.search).get('view')==='present';
+
+function freshState(){
+  return {
+    teams: DEFAULT_TEAMS.map((t,i)=>({id:i+1,name:t.name,members:t.members,color:TEAM_COLORS[i],score:0})),
+    log: [],
+    scene: 'scoreboard',
+    timer: {endsAt:null, remaining:30000, running:false, duration:30000},
+    topic: {flatIndex:0, revealed:false},
+    gacha: {spinId:0, result:null, winnerTeamId:null, spinning:false},
+    prizes: [
+      {id:'p1',name:'Amazonギフト券 3,000円',qty:1},
+      {id:'p2',name:'ちょっと良いお菓子詰め合わせ',qty:2},
+      {id:'p3',name:'ドリンクチケット',qty:3},
+      {id:'p4',name:'ハズレなしステッカー',qty:5},
+    ],
+  };
+}
+let state = load();
+function load(){
+  try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.teams) return s;}catch(e){}
+  return freshState();
+}
+function save(broadcast=true){
+  localStorage.setItem(KEY, JSON.stringify(state));
+  if(broadcast && bc) bc.postMessage({t:'sync'});
+}
+// 他ウィンドウからの同期
+if(bc) bc.onmessage=(e)=>{ if(e.data&&e.data.t==='sync'){ state=load(); renderAll(); } };
+window.addEventListener('storage',(e)=>{ if(e.key===KEY){ state=load(); renderAll(); }});
+
+/* ================================================================
+   SOUND (WebAudio, 外部ファイル不要)
+   ================================================================ */
+let actx=null;
+function AC(){ if(!actx){ try{actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } return actx; }
+function tone(freq,dur,type='sine',vol=.25,delay=0){
+  const c=AC(); if(!c) return;
+  const o=c.createOscillator(),g=c.createGain();
+  o.type=type;o.frequency.value=freq;
+  const t=c.currentTime+delay;
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g).connect(c.destination); o.start(t); o.stop(t+dur+0.02);
+}
+const SFX={
+  ding(){tone(880,.18,'sine',.3);tone(1320,.25,'sine',.22,.05);},
+  good(){[523,659,784].forEach((f,i)=>tone(f,.22,'triangle',.28,i*0.07));},
+  buzz(){tone(160,.35,'sawtooth',.25);tone(120,.4,'sawtooth',.2,.02);},
+  tick(){tone(1200,.05,'square',.12);},
+  fanfare(){[523,659,784,1046].forEach((f,i)=>tone(f,.5,'triangle',.3,i*0.12));
+            tone(1318,.8,'triangle',.28,.55);},
+  drum(){const c=AC();if(!c)return;for(let i=0;i<20;i++)tone(90+Math.random()*40,.04,'square',.14,i*0.055);},
+  win(){[659,784,988,1318,1568].forEach((f,i)=>tone(f,.4,'triangle',.32,i*0.09));},
+};
+
+/* ================================================================
+   CONFETTI
+   ================================================================ */
+const cvs=document.getElementById('confetti'),ctx=cvs.getContext('2d');
+let parts=[],raf=null;
+function sizeCvs(){cvs.width=innerWidth;cvs.height=innerHeight;}
+addEventListener('resize',sizeCvs);sizeCvs();
+function confetti(n=140){
+  const cols=['#ffd23f','#ff6b6b','#4da3ff','#33d69f','#c084fc','#ff9d3d','#fff'];
+  for(let i=0;i<n;i++)parts.push({
+    x:Math.random()*cvs.width,y:-20-Math.random()*cvs.height*.3,
+    vx:(Math.random()-.5)*6,vy:2+Math.random()*5,
+    s:6+Math.random()*8,rot:Math.random()*6.28,vr:(Math.random()-.5)*.3,
+    col:cols[Math.floor(Math.random()*cols.length)],life:1
+  });
+  if(!raf)loopC();
+}
+function loopC(){
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+  parts.forEach(p=>{p.vy+=.08;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.vx*=.99;
+    if(p.y>cvs.height+30)p.life=0;
+    ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.col;
+    ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);ctx.restore();});
+  parts=parts.filter(p=>p.life>0);
+  if(parts.length)raf=requestAnimationFrame(loopC);else{raf=null;ctx.clearRect(0,0,cvs.width,cvs.height);}
+}
+
+/* ================================================================
+   MUTATIONS
+   ================================================================ */
+function nowStr(){const d=new Date();return d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function team(id){return state.teams.find(t=>t.id===id);}
+function addPoints(id,delta,label){
+  const t=team(id); if(!t)return;
+  t.score=Math.max(0,t.score+delta);
+  state.log.unshift({time:nowStr(),team:t.name,delta,label,color:t.color});
+  state.log=state.log.slice(0,120);
+  save();
+  if(!isPresent){ delta>0?SFX.good():SFX.buzz(); }
+  renderAll();
+  if(delta>0 && state.scene==='scoreboard') confetti(40);
+}
+function undo(){
+  const last=state.log[0]; if(!last)return;
+  const t=state.teams.find(x=>x.name===last.team); if(t)t.score=Math.max(0,t.score-last.delta);
+  state.log.shift(); save(); renderAll();
+}
+function setScene(s){ state.scene=s; save(); renderAll(); if(s==='result'){SFX.fanfare();confetti(220);} }
+
+/* ================================================================
+   STAGE RENDER
+   ================================================================ */
+function sortedTeams(){return [...state.teams].sort((a,b)=>b.score-a.score);}
+const stageBody=document.getElementById('stageBody');
+const stageLabel=document.getElementById('stageLabel');
+
+function renderStage(){
+  const sc=state.scene;
+  if(sc!=='timer')stopTimerRaf(); // 他シーンへ移ったらタイマー描画ループを止める
+  stageLabel.textContent=({scoreboard:'SCOREBOARD',timer:'TIMER',topic:'ILLUST QUIZ',gacha:'PRIZE GACHA',result:'FINAL RESULT'})[sc]||'';
+  if(sc==='scoreboard'){renderScoreboard();}
+  else if(sc==='timer'){renderTimerStage();}
+  else if(sc==='topic'){renderTopicStage();}
+  else if(sc==='gacha'){renderGachaStage();}
+  else if(sc==='result'){renderResultStage();}
+}
+
+let prevRanks={};
+function renderScoreboard(){
+  const sorted=sortedTeams();
+  const max=Math.max(50,...sorted.map(t=>t.score));
+  let h='<div class="board-title">🏆 現在のポイント 🏆</div><div class="board-sub">最大 '+MAX_TOTAL+'pt / チーム</div>';
+  sorted.forEach((t,i)=>{
+    const medal=['🥇','🥈','🥉'][i]||'';
+    const pct=(t.score/max)*100;
+    const changed=prevRanks[t.id]!==undefined && prevRanks[t.id]!==i;
+    const dir=(prevRanks[t.id]!==undefined && i<prevRanks[t.id])?'flash-up':(prevRanks[t.id]>i?'':'');
+    h+=`<div class="rankrow ${i===0?'leader':''} ${changed?dir:''}" data-tid="${t.id}">
+      <div class="${medal?'medal':'rank'}">${medal||(i+1)}</div>
+      <div class="tname">${t.name}<div class="tmembers">${t.members.length}名</div></div>
+      <div class="barwrap"><div class="bar" style="width:${pct}%;background:linear-gradient(90deg,${t.color},${t.color}cc)"></div></div>
+      <div class="score" style="color:${i===0?'var(--accent)':'#fff'}">${t.score}</div>
+    </div>`;
+  });
+  stageBody.innerHTML=h;
+  sorted.forEach((t,i)=>prevRanks[t.id]=i);
+}
+
+function renderResultStage(){
+  const s=sortedTeams();
+  const top3=[s[1],s[0],s[2]]; // 2位,1位,3位の配置
+  const cls=['p2','p1','p3'],caps=['🥈','🥇','🥉'],order=[2,1,3];
+  let h='<div class="board-title">🎉 総合結果発表 🎉</div><div class="board-sub">優勝チームおめでとうございます！</div><div class="podium">';
+  top3.forEach((t,i)=>{ if(!t)return;
+    h+=`<div class="pod ${cls[i]}"><div class="pcap">${caps[i]}</div>
+      <div class="pname">${t.name}</div><div class="pscore">${t.score}pt</div>
+      <div class="pblock" style="background:linear-gradient(180deg,${t.color},${t.color}99)">${order[i]}</div></div>`;
+  });
+  h+='</div>';
+  if(s[3]||s[4]){h+='<div style="text-align:center;color:var(--muted);font-size:15px">';
+    s.slice(3).forEach((t,i)=>{h+=`<span class="chip">${i+4}位　${t.name}　${t.score}pt</span>`;});h+='</div>';}
+  stageBody.innerHTML=h;
+}
+
+/* ---- Timer stage (self-running from shared endsAt) ---- */
+let timerRaf=null;
+function timerRemaining(){
+  const t=state.timer;
+  if(t.running && t.endsAt) return Math.max(0,t.endsAt-Date.now());
+  return t.remaining;
+}
+function fmt(ms){const s=Math.ceil(ms/1000);return s;}
+function renderTimerStage(){
+  stopTimerRaf();
+  const paint=()=>{
+    if(state.scene!=='timer'){stopTimerRaf();return;} // シーンが変わったら停止
+    const ms=timerRemaining();
+    const s=fmt(ms);
+    let cls='',lbl='のこり時間';
+    if(ms<=5000&&ms>0)cls='danger';else if(ms<=10000&&ms>0)cls='warn';
+    let inner;
+    if(ms<=0 && (state.timer.running||state.timer.endsAt)){inner=`<div class="timer-done">⏰ TIME UP!</div>`;lbl='';}
+    else inner=`<div class="timer-num ${cls}">${s}</div>`;
+    stageBody.innerHTML=`<div class="timer-stage"><div class="timer-label">${lbl}</div>${inner}</div>`;
+    // tick sound only in present or admin when at scene
+    if(state.timer.running){
+      if(ms>0 && ms<=5500 && s!==lastTickSec){ lastTickSec=s; SFX.tick(); }
+      if(ms<=0 && !timeUpFired){ timeUpFired=true; SFX.buzz(); confetti(60); }
+      if(ms>0) timerRaf=requestAnimationFrame(paint);
+    }
+  };
+  paint();
+}
+let lastTickSec=null,timeUpFired=false;
+function stopTimerRaf(){ if(timerRaf){cancelAnimationFrame(timerRaf);timerRaf=null;} }
+
+/* ---- Topic stage ---- */
+function flatTopics(){const a=[];TOPICS.forEach(g=>g.items.forEach(it=>a.push({set:g.set,ans:it})));return a;}
+function renderTopicStage(){
+  const all=flatTopics();
+  const idx=Math.min(state.topic.flatIndex,all.length-1);
+  const cur=all[idx];
+  let ansHtml=state.topic.revealed
+    ? `<div class="topic-answer">${cur.ans}</div>`
+    : `<div class="topic-hidden">？？？</div>`;
+  stageBody.innerHTML=`<div class="topic-stage">
+    <div class="topic-count">お題 ${idx+1} / ${all.length}</div>
+    <div class="topic-set">${cur.set}</div>
+    ${ansHtml}
+  </div>`;
+}
+
+/* ---- Gacha stage ---- */
+let lastSpinShown=0;
+function renderGachaStage(){
+  const g=state.gacha;
+  const pool=gachaPool();
+  const names=pool.length?pool.map(p=>p.name):['景品を登録してください'];
+  let resultHtml=g.result?`<div class="gacha-result">🎉 ${g.result} 🎉</div>`:'<div class="gacha-result"></div>';
+  let winner=g.winnerTeamId?`<div class="gacha-win-team">当選チーム：${team(g.winnerTeamId)?.name||''}</div>`:'';
+  stageBody.innerHTML=`<div class="gacha-stage">
+    <div class="gacha-title">🎁 景品ガチャ 🎁</div>
+    <div class="reel"><div class="reel-track" id="reelTrack"></div></div>
+    ${resultHtml}${winner}
+  </div>`;
+  const track=document.getElementById('reelTrack');
+  // build reel items
+  const reel=[];
+  for(let i=0;i<24;i++)reel.push(names[Math.floor(Math.random()*names.length)]);
+  const finalName=g.result||names[0];
+  reel.push(finalName);
+  track.innerHTML=reel.map(n=>`<div class="reel-item">${n}</div>`).join('');
+  // animate only when a new spin arrived
+  if(g.spinId>lastSpinShown){
+    lastSpinShown=g.spinId;
+    const H=150,total=reel.length;
+    track.style.transition='none';
+    track.style.transform='translateY(0)';
+    void track.offsetHeight;
+    if(!isPresent)SFX.drum();
+    track.style.transition='transform 3.4s cubic-bezier(.15,.85,.2,1)';
+    track.style.transform=`translateY(-${(total-1)*H}px)`;
+    setTimeout(()=>{ if(!isPresent){SFX.win();} confetti(180); },3300);
+  }else{
+    // static: show final at rest
+    track.style.transition='none';
+    track.style.transform=`translateY(-${(reel.length-1)*150}px)`;
+  }
+}
+function gachaPool(){return state.prizes.filter(p=>p.qty>0);}
+
+/* ================================================================
+   PANEL RENDER (admin only)
+   ================================================================ */
+let curTab='score';
+const panel=document.getElementById('panel');
+document.getElementById('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('.tab'); if(!b)return;
+  curTab=b.dataset.tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===b));
+  renderPanel();
+});
+
+function sceneButtons(active){
+  const scenes=[['scoreboard','🏆 得点表'],['timer','⏱ タイマー'],['topic','🎨 お題'],['gacha','🎁 ガチャ'],['result','🎉 結果発表']];
+  return `<div class="scene-btns">`+scenes.map(([k,l])=>
+    `<button class="scene-btn ${state.scene===k?'active':''}" data-scene="${k}">${l}</button>`).join('')+`</div>`;
+}
+
+function renderPanel(){
+  if(curTab==='score')renderScorePanel();
+  else if(curTab==='timer')renderTimerPanel();
+  else if(curTab==='topic')renderTopicPanel();
+  else if(curTab==='gacha')renderGachaPanel();
+  else if(curTab==='info')renderInfoPanel();
+  bindSceneBtns();
+}
+function bindSceneBtns(){
+  panel.querySelectorAll('[data-scene]').forEach(b=>b.onclick=()=>setScene(b.dataset.scene));
+}
+
+/* ---- Score panel ---- */
+function renderScorePanel(){
+  let h=`<h3>🎯 得点操作</h3>
+  <div class="hint">ボタンを押すと即座に投影画面へ反映されます。緑=加点 / 黄=部分点 / 赤=減点。</div>
+  ${sceneButtons()}`;
+  state.teams.forEach(t=>{
+    h+=`<div class="teamctl">
+      <div class="teamctl-head"><span class="dot" style="background:${t.color}"></span>
+        <span class="teamctl-name">${t.name}</span>
+        <span class="teamctl-score" style="color:${t.color}">${t.score}</span></div>
+      <div class="btnrow"><span class="lbl">クイズ</span>
+        <button class="pbtn good" data-add="${t.id}" data-v="10" data-l="クイズ正解">正解 +10</button>
+        <button class="pbtn mid"  data-add="${t.id}" data-v="5"  data-l="クイズ惜しい">惜しい +5</button></div>
+      <div class="btnrow"><span class="lbl">イラスト</span>
+        <button class="pbtn good" data-add="${t.id}" data-v="10" data-l="イラスト正解">正解 +10</button>
+        <button class="pbtn mid"  data-add="${t.id}" data-v="5"  data-l="イラスト近似">近似 +5</button>
+        <button class="pbtn mid"  data-add="${t.id}" data-v="5"  data-l="面白さ賞">面白さ +5</button></div>
+      <div class="btnrow"><span class="lbl">調整</span>
+        <button class="pbtn" data-add="${t.id}" data-v="1" data-l="調整">+1</button>
+        <button class="pbtn sub" data-add="${t.id}" data-v="-1" data-l="調整">-1</button>
+        <button class="pbtn sub" data-add="${t.id}" data-v="-5" data-l="調整">-5</button>
+        <input class="custom-in" type="number" id="cst${t.id}" placeholder="±" >
+        <button class="pbtn" data-custom="${t.id}">加算</button></div>
+    </div>`;
+  });
+  // Challenge rank tool
+  h+=`<div class="teamctl" style="border-color:var(--accent)">
+    <div class="teamctl-head"><span class="teamctl-name">🥊 チャレンジゲーム 順位入力</span></div>
+    <div class="hint" style="margin:6px 0">競技を選び各順位のチームを指定 →「順位を確定」で 1位+10 / 2位+8 / 3位+6 / 4位+4 / 5位+2 を自動加算。</div>
+    <div class="field"><label>競技</label><select id="chSel">${CHALLENGES.map((c,i)=>`<option>${i+1}. ${c}</option>`).join('')}</select></div>`;
+  ['1位(+10)','2位(+8)','3位(+6)','4位(+4)','5位(+2)'].forEach((lbl,i)=>{
+    h+=`<div class="field" style="display:flex;gap:8px;align-items:center;margin-bottom:7px">
+      <label style="width:70px;margin:0">${lbl}</label>
+      <select id="rk${i}" style="flex:1"><option value="">-</option>${state.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('')}</select></div>`;
+  });
+  h+=`<button class="bigbtn" id="applyRank">順位を確定して加算</button></div>`;
+  h+=`<button class="ghostbtn" id="undoBtn">↩ 直前の操作を取り消す</button>`;
+  // log
+  h+=`<div class="log" id="logBox">`+state.log.slice(0,40).map(l=>
+    `<div class="logrow"><span class="lt">${l.time}</span><span style="color:${l.color}">${l.team}</span>
+     <span style="color:${l.delta>0?'var(--good)':'var(--bad)'}">${l.delta>0?'+':''}${l.delta}</span><span>${l.label}</span></div>`).join('')+`</div>`;
+  panel.innerHTML=h;
+
+  panel.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>addPoints(+b.dataset.add,+b.dataset.v,b.dataset.l));
+  panel.querySelectorAll('[data-custom]').forEach(b=>b.onclick=()=>{
+    const id=+b.dataset.custom;const v=parseInt(document.getElementById('cst'+id).value,10);
+    if(!isNaN(v)&&v!==0){addPoints(id,v,'手動加算');}
+  });
+  document.getElementById('applyRank').onclick=()=>{
+    const comp=document.getElementById('chSel').value;let any=false;
+    for(let i=0;i<5;i++){const v=document.getElementById('rk'+i).value;
+      if(v){addPointsSilent(+v,RANK_POINTS[i],`${comp} ${i+1}位`);any=true;}}
+    if(any){save();SFX.good();confetti(60);renderAll();}
+  };
+  document.getElementById('undoBtn').onclick=undo;
+}
+function addPointsSilent(id,delta,label){
+  const t=team(id);if(!t)return;t.score=Math.max(0,t.score+delta);
+  state.log.unshift({time:nowStr(),team:t.name,delta,label,color:t.color});
+}
+
+/* ---- Timer panel ---- */
+function renderTimerPanel(){
+  const t=state.timer;
+  panel.innerHTML=`<h3>⏱ シンキングタイマー</h3>
+  <div class="hint">クイズ30秒 / イラスト1分などのカウントダウン。開始すると投影画面が自動でタイマー表示に切替わります。</div>
+  ${sceneButtons()}
+  <div class="scene-btns">
+    <button class="scene-btn" data-sec="30">30秒</button>
+    <button class="scene-btn" data-sec="60">60秒</button>
+    <button class="scene-btn" data-sec="90">90秒</button>
+    <button class="scene-btn" data-sec="10">10秒</button>
+  </div>
+  <div class="field"><label>秒数を指定</label><input type="number" id="secIn" value="${Math.round((t.duration||30000)/1000)}"></div>
+  <button class="bigbtn" id="tStart">▶ スタート（投影へ）</button>
+  <button class="ghostbtn" id="tPause">⏸ 一時停止 / 再開</button>
+  <button class="ghostbtn" id="tReset">⟲ リセット</button>
+  <div class="mini">状態：${t.running?'⏱ 動作中':'停止中'}　残り約 ${Math.round(timerRemaining()/1000)} 秒</div>`;
+  panel.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{document.getElementById('secIn').value=b.dataset.sec;startTimer(+b.dataset.sec*1000);});
+  document.getElementById('tStart').onclick=()=>{const s=parseInt(document.getElementById('secIn').value,10)||30;startTimer(s*1000);};
+  document.getElementById('tPause').onclick=pauseTimer;
+  document.getElementById('tReset').onclick=resetTimer;
+  bindSceneBtns();
+}
+function startTimer(ms){
+  timeUpFired=false;lastTickSec=null;
+  state.timer={endsAt:Date.now()+ms,remaining:ms,running:true,duration:ms};
+  state.scene='timer';save();renderAll();
+}
+function pauseTimer(){
+  const t=state.timer;
+  if(t.running){t.remaining=Math.max(0,t.endsAt-Date.now());t.running=false;t.endsAt=null;}
+  else{t.endsAt=Date.now()+(t.remaining||0);t.running=true;timeUpFired=false;lastTickSec=null;}
+  save();renderAll();
+}
+function resetTimer(){timeUpFired=false;lastTickSec=null;
+  state.timer={endsAt:null,remaining:state.timer.duration||30000,running:false,duration:state.timer.duration||30000};
+  save();renderAll();}
+
+/* ---- Topic panel ---- */
+function renderTopicPanel(){
+  const all=flatTopics();const idx=Math.min(state.topic.flatIndex,all.length-1);const cur=all[idx];
+  panel.innerHTML=`<h3>🎨 テーマイラスト当て</h3>
+  <div class="hint">4人が絵を描き1人が回答。お題を切替え、正解のタイミングで「答えを表示」。全15問。</div>
+  ${sceneButtons()}
+  <div class="field"><label>現在のお題（${idx+1}/${all.length}）</label>
+    <select id="topicSel">${all.map((a,i)=>`<option value="${i}" ${i===idx?'selected':''}>${i+1}. [${a.set.split(' ')[0]}] ${state.topic.revealed||i<idx?a.ans:'？？？'}</option>`).join('')}</select></div>
+  <div style="text-align:center;padding:14px;border:1px dashed var(--line);border-radius:12px;margin-bottom:12px">
+    <div style="color:var(--muted);font-size:12px">${cur.set}</div>
+    <div style="font-size:26px;font-weight:900;margin-top:6px;color:${state.topic.revealed?'var(--accent)':'var(--muted)'}">${state.topic.revealed?cur.ans:'？？？'}</div></div>
+  <div class="scene-btns">
+    <button class="scene-btn" id="tPrev">◀ 前のお題</button>
+    <button class="scene-btn" id="tReveal">${state.topic.revealed?'🙈 隠す':'👁 答えを表示'}</button>
+    <button class="scene-btn" id="tNext">次のお題 ▶</button>
+  </div>
+  <div class="mini">※ 正解チームへの加点は「🎯 得点」タブから行ってください。</div>`;
+  document.getElementById('topicSel').onchange=(e)=>{state.topic.flatIndex=+e.target.value;state.topic.revealed=false;state.scene='topic';save();renderAll();};
+  document.getElementById('tPrev').onclick=()=>{state.topic.flatIndex=Math.max(0,idx-1);state.topic.revealed=false;state.scene='topic';save();renderAll();};
+  document.getElementById('tNext').onclick=()=>{state.topic.flatIndex=Math.min(all.length-1,idx+1);state.topic.revealed=false;state.scene='topic';save();renderAll();};
+  document.getElementById('tReveal').onclick=()=>{state.topic.revealed=!state.topic.revealed;state.scene='topic';save();if(state.topic.revealed&&!isPresent){SFX.ding();confetti(50);}renderAll();};
+  bindSceneBtns();
+}
+
+/* ---- Gacha panel ---- */
+function renderGachaPanel(){
+  const pool=gachaPool();
+  panel.innerHTML=`<h3>🎁 景品ガチャ</h3>
+  <div class="hint">残数のある景品からランダムで1つ抽選。当選チームを選んでスピンすると、リール演出＆紙吹雪で盛り上げます。</div>
+  ${sceneButtons()}
+  <div class="field"><label>当選チーム（任意）</label>
+    <select id="gTeam"><option value="">- 指定しない -</option>${state.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('')}</select></div>
+  <button class="bigbtn spin" id="spinBtn" ${pool.length?'':'disabled'}>🎰 ガチャを回す！</button>
+  ${state.gacha.result?`<div class="mini">前回の結果：<b style="color:var(--accent)">${state.gacha.result}</b>${state.gacha.winnerTeamId?`（${team(state.gacha.winnerTeamId)?.name}）`:''}</div>`:''}
+  <h3 style="margin-top:20px">景品リスト（残数）</h3>
+  <div id="prizeList">${state.prizes.map(p=>`
+    <div class="prizerow"><span class="pn">${p.name}</span>
+      <span class="pq">残 ${p.qty}</span>
+      <button class="rm" data-dec="${p.id}">−</button>
+      <button class="rm" style="background:rgba(49,217,122,.16);border-color:rgba(49,217,122,.35)" data-inc="${p.id}">＋</button>
+      <button class="rm" data-del="${p.id}">✕</button></div>`).join('')}</div>
+  <div class="field" style="margin-top:10px"><label>景品を追加</label>
+    <input id="newPrize" placeholder="景品名"></div>
+  <div style="display:flex;gap:8px"><input id="newQty" class="field" type="number" value="1" style="width:80px;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px;border-radius:10px">
+    <button class="ghostbtn" style="margin:0;flex:1" id="addPrize">＋ 追加</button></div>`;
+  document.getElementById('spinBtn').onclick=spinGacha;
+  panel.querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>{const p=state.prizes.find(x=>x.id===b.dataset.inc);p.qty++;save();renderPanel();});
+  panel.querySelectorAll('[data-dec]').forEach(b=>b.onclick=()=>{const p=state.prizes.find(x=>x.id===b.dataset.dec);p.qty=Math.max(0,p.qty-1);save();renderPanel();});
+  panel.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{state.prizes=state.prizes.filter(x=>x.id!==b.dataset.del);save();renderPanel();});
+  document.getElementById('addPrize').onclick=()=>{
+    const n=document.getElementById('newPrize').value.trim();const q=parseInt(document.getElementById('newQty').value,10)||1;
+    if(n){state.prizes.push({id:'p'+Date.now(),name:n,qty:q});save();renderPanel();}
+  };
+  bindSceneBtns();
+}
+function spinGacha(){
+  const pool=gachaPool();if(!pool.length)return;
+  const pick=pool[Math.floor(Math.random()*pool.length)];
+  pick.qty=Math.max(0,pick.qty-1);
+  const wt=document.getElementById('gTeam').value;
+  state.gacha={spinId:(state.gacha.spinId||0)+1,result:pick.name,winnerTeamId:wt?+wt:null,spinning:true};
+  state.scene='gacha';save();renderAll();
+}
+
+/* ---- Info panel ---- */
+function renderInfoPanel(){
+  const tt=[
+    ['20:00-20:05','ルール説明・チーム分け','全員集合'],
+    ['20:05-20:35','クイズ 20問','5人で1問（シンキング30秒）'],
+    ['20:35-21:35','イラスト当て 15問','4人絵描き・1人回答（1分＋30秒）'],
+    ['21:35-21:55','チャレンジゲーム 5種目','1人1種の5競技'],
+    ['21:55-22:00','総合結果・景品発表','表彰・写真撮影'],
+  ];
+  panel.innerHTML=`<h3>📋 進行・設定</h3>
+  <div class="hint">当日の進行表（90分想定）。下部でチーム名の編集・スコアのリセットができます。</div>
+  <div style="border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:16px">
+    ${tt.map(r=>`<div class="tt-row"><span class="tt-time">${r[0]}</span><span><b>${r[1]}</b><div class="mini">${r[2]}</div></span></div>`).join('')}
+  </div>
+  <h3>配点ルール</h3>
+  <div style="font-size:13px;color:var(--muted);line-height:1.9;margin-bottom:16px">
+   ・クイズ20問：正解 <b style="color:#fff">10</b> / 惜しい <b style="color:#fff">5</b>（最大200）<br>
+   ・イラスト15問：正解 <b style="color:#fff">10</b> / 近似 <b style="color:#fff">5</b> / 面白さ賞 <b style="color:#fff">5</b>（最大150）<br>
+   ・チャレンジ5種目：順位制 <b style="color:#fff">10/8/6/4/2</b>（最大50）<br>
+   ・合計 最大 <b style="color:var(--accent)">350</b>pt / チーム
+  </div>
+  <h3>チーム名の編集</h3>
+  ${state.teams.map(t=>`<div class="field" style="display:flex;gap:8px;align-items:center;margin-bottom:7px">
+     <span class="dot" style="background:${t.color}"></span>
+     <input value="${t.name}" data-rename="${t.id}" style="flex:1">
+     <span class="mini" style="margin:0">${t.members.join('・')}</span></div>`).join('')}
+  <button class="ghostbtn" id="saveNames">名前を保存</button>
+  <button class="ghostbtn dangerbtn" id="resetScores">⚠ スコアを全てリセット</button>
+  <button class="ghostbtn dangerbtn" id="resetAll">⚠ 全データを初期化</button>`;
+  panel.querySelectorAll('[data-rename]').forEach(inp=>inp.onchange=()=>{const t=team(+inp.dataset.rename);if(t)t.name=inp.value;save();});
+  document.getElementById('saveNames').onclick=()=>{save();renderAll();};
+  document.getElementById('resetScores').onclick=()=>{if(confirm('全チームのスコアを0に戻します。よろしいですか？')){state.teams.forEach(t=>t.score=0);state.log=[];prevRanks={};save();renderAll();}};
+  document.getElementById('resetAll').onclick=()=>{if(confirm('チーム名・景品・スコアを含む全データを初期状態に戻します。よろしいですか？')){state=freshState();save();renderAll();}};
+}
+
+/* ================================================================
+   TOP BUTTONS
+   ================================================================ */
+document.getElementById('btnPresent').onclick=()=>{
+  window.open(location.pathname+'?view=present','rectool_present','width=1280,height=800');
+};
+document.getElementById('btnFull').onclick=()=>{
+  const el=document.getElementById('stage');
+  if(!document.fullscreenElement)el.requestFullscreen?.();else document.exitFullscreen?.();
+};
+
+/* ================================================================
+   MASTER RENDER
+   ================================================================ */
+function renderAll(){
+  document.getElementById('totalPill').textContent=
+    `合計 ${state.teams.reduce((s,t)=>s+t.score,0)} / ${MAX_TOTAL*state.teams.length}pt`;
+  renderStage();
+  if(!isPresent)renderPanel();
+}
+
+/* present mode setup */
+if(isPresent){
+  document.body.classList.add('present');
+  // present window auto-runs timer/gacha animations via renderStage
+}
+
+// unlock audio on first interaction
+addEventListener('pointerdown',()=>{AC()&&AC().resume&&AC().resume();},{once:true});
+addEventListener('keydown',e=>{
+  if(isPresent)return;
+  if(e.key==='ArrowRight'&&curTab==='topic'){document.getElementById('tNext')?.click();}
+  if(e.key==='ArrowLeft'&&curTab==='topic'){document.getElementById('tPrev')?.click();}
+  if(e.key===' '&&curTab==='topic'){e.preventDefault();document.getElementById('tReveal')?.click();}
+});
+
+renderAll();
+</script>
+</body>
+</html>
