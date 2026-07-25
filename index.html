@@ -207,6 +207,42 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
 .host-name{font-size:clamp(14px,1.6vw,20px);font-weight:800}
 .host-name .hn-sub{color:var(--muted);font-size:12px;font-weight:700;margin-left:6px}
 @media(max-width:640px){.host-badge{left:10px;bottom:10px;padding:5px 12px 5px 5px}.host-badge .hb-txt{font-size:13px}}
+
+/* ---------- クイズ「フジヌマ男爵からの挑戦状」宝の地図テーマ ---------- */
+/* ハレーション対策：羊皮紙は白ではなく落ち着いた琥珀色＋暗いビネットで輝度を抑える */
+.stage.quiz-scene{background:radial-gradient(120% 120% at 50% 30%,#2a1c0e 0%,#1a1108 60%,#0d0803 100%)}
+.quiz-stage{min-height:520px;display:flex;align-items:center;justify-content:center;padding:8px}
+.parchment{position:relative;width:min(94%,900px);border-radius:10px;padding:clamp(26px,4vw,54px);
+  font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP","MS Mincho",serif;color:#3a2410;text-align:center;
+  background:radial-gradient(115% 130% at 50% 42%,#f0e0ba 0%,#e6d2a2 46%,#cdb079 74%,#a9884e 100%);
+  box-shadow:inset 0 0 90px rgba(90,55,15,.55),inset 0 0 24px rgba(60,35,10,.4),0 22px 60px rgba(0,0,0,.65);
+  border:1px solid #7a5a2e}
+.parchment::before{content:"";position:absolute;inset:12px;border:2px dashed rgba(120,80,35,.5);border-radius:6px;pointer-events:none}
+.parchment .deco{position:absolute;opacity:.28;font-size:34px;pointer-events:none}
+.parchment .deco.tl{top:14px;left:18px}.parchment .deco.br{bottom:14px;right:18px}
+.q-badge{display:inline-flex;align-items:center;gap:8px;font-family:system-ui,sans-serif;font-weight:800;font-size:14px;
+  color:#5a3a12;background:linear-gradient(180deg,#f3d98a,#d9a83f);border:1px solid #a9791f;border-radius:30px;
+  padding:6px 16px;box-shadow:0 3px 10px rgba(0,0,0,.3);margin-bottom:14px}
+.q-num{font-size:clamp(15px,1.7vw,20px);font-weight:800;letter-spacing:2px;color:#6b4a1e;margin-bottom:10px}
+.q-text{font-size:clamp(26px,4vw,52px);font-weight:800;line-height:1.45;margin:6px 0 4px;text-shadow:0 1px 0 rgba(255,255,255,.25)}
+.q-seal{position:absolute;top:-18px;right:clamp(18px,4vw,44px);width:88px;height:88px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,#f6df95,#c9932f 70%,#8a5f16);border:3px solid #8a5f16;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;color:#4a3008;font-family:system-ui,sans-serif;
+  box-shadow:0 6px 16px rgba(0,0,0,.4);transform:rotate(-8deg)}
+.q-seal b{font-size:26px;line-height:1;font-weight:900}.q-seal span{font-size:11px;font-weight:800}
+.q-answer-label{font-size:clamp(18px,2.2vw,26px);color:#7a4a12;font-weight:800;margin:14px 0 6px;letter-spacing:4px}
+.q-answer{font-size:clamp(34px,6vw,74px);font-weight:900;color:#7a1f0f;line-height:1.3;
+  text-shadow:0 2px 0 rgba(255,255,255,.3)}
+.q-note{margin:18px auto 0;max-width:90%;font-family:system-ui,sans-serif;font-size:clamp(13px,1.6vw,19px);font-weight:700;
+  color:#4a3418;background:rgba(120,80,30,.14);border:1px solid rgba(120,80,30,.35);border-radius:12px;padding:12px 18px;line-height:1.7}
+.q-hidden{font-size:clamp(40px,9vw,110px);font-weight:900;color:rgba(90,60,25,.45);letter-spacing:14px;margin-top:6px}
+.quiz-intro-title{font-size:clamp(30px,6vw,74px);font-weight:900;line-height:1.3;
+  color:#4a2c10;text-shadow:0 2px 0 rgba(255,255,255,.3)}
+.quiz-intro-sub{display:inline-block;font-family:system-ui,sans-serif;font-size:clamp(13px,1.7vw,20px);font-weight:800;
+  color:#f0e0ba;background:linear-gradient(180deg,#5a3a18,#3a2410);border:1px solid #caa25a;border-radius:6px;padding:6px 22px;margin-bottom:18px}
+.quiz-intro-body{font-size:clamp(14px,1.7vw,21px);line-height:1.9;text-align:left;max-width:92%;margin:16px auto 0;font-weight:600}
+.quiz-emph{color:#7a1f0f;font-weight:900}
+@media(max-width:640px){.q-seal{width:66px;height:66px;top:-14px}.q-seal b{font-size:20px}.parchment::before{inset:8px}}
 .footer{grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;padding:6px}
 
 /* ---------- スマホ・タブレット対応 ---------- */
@@ -266,6 +302,7 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
   <div class="dock">
     <div class="tabs" id="tabs">
       <button class="tab active" data-tab="score">🎯 得点</button>
+      <button class="tab" data-tab="quiz">📜 クイズ</button>
       <button class="tab" data-tab="timer">⏱ タイマー</button>
       <button class="tab" data-tab="topic">🎨 お題</button>
       <button class="tab" data-tab="gacha">🎁 ガチャ</button>
@@ -298,7 +335,41 @@ const TOPICS = [
 // チャレンジゲーム 5競技
 const CHALLENGES = ['腕相撲','片足立ち','だるまさんが転んだ','10秒ストップ','早飲み対決'];
 const RANK_POINTS = [10,8,6,4,2]; // 1位〜5位
-const MAX_TOTAL = 350; // 1チーム最大
+
+// クイズ「フジヌマ男爵からの挑戦状」（添付スライドを反映：全20問／各5ポイント）
+const QUIZ_POINT = 5;
+const QUIZ_INTRO = {
+  title:'フジヌマ男爵からの挑戦状',
+  sub:'チームで力を合わせてクリアせよ',
+  body:'これより、5人1組のチーム戦を開始する。出題される問題に対し、チーム全員で知恵を出し合い、答えを導き出せ。回答は選択式ではない。すべて記述式だ。シンキングタイムは、各問題わずか30秒。ひらめき、知識、そしてチームワークが勝敗を分ける。見事、優秀な成績を収めたチームには賞品を用意している。仲間を信じ、最後まで諦めずに挑め。果たして、この挑戦を制するのはどのチームだ――？',
+};
+const QUIZ_OUTRO = {
+  title:'全問終了',
+  body:'これにて、すべての問題への挑戦が終了した。ひらめきが光ったチーム。知識でねじ伏せたチーム。そして、誰も予想できない珍回答で会場をざわつかせたチーム。数々の戦いを乗り越え、最後に残ったのは各チームが積み重ねた得点だ。これより、最終結果を発表する。果たして、最も多くの正解をつかみ取り栄光と賞品を手にするのはどのチームなのか――。運命の結果発表を、刮目して待て！',
+};
+const QUIZ = [
+  {q:'ヘビが舌で集めたにおいの成分を調べる器官は？', a:'ヤコブソン器官', note:'蛇は目で見るよりもにおいで獲物を判別する種類が圧倒的に多いよ！！'},
+  {q:'カメレオンの目には、どんな特徴がある？', a:'左右の目を別々に動かせる', note:'カメレオンは動いているものしか認識できない。だから目の前に水があるのに気づかず脱水で死んでしまうこともあるよ！！'},
+  {q:'古文で使われる「うつくし」とはどういう意味？', a:'かわいらしい', note:'これと同じで今使われている言葉で意味が違うものが古文にはたくさんある！'},
+  {q:'古語の「ありがたし」とはどういう意味？', a:'めったにない', note:'漢字で書くと「有難し」、有るのが難しい＝めったにないという意味だね！！'},
+  {q:'メラビアンの法則の「7・38・55」で、声の調子などの聴覚情報は何％？', a:'38%', note:'7%は話している内容、55%は見た目を指している。意外とみんな何を話しているかは聞いてないってこと！！'},
+  {q:'メラビアンの法則が役に立つのはどのような場面？', a:'相手に気持ちや感情を伝える場面', note:'大人のみんなは営業で学んだね！子どもたちも覚えておねだり上手になろう！'},
+  {q:'サッカーは通常1チーム何人で試合を始める？', a:'11人', note:'今年のワールドカップも大盛り上がりだったね！僕はいまだにオフサイドの意味がまったく分かりません！'},
+  {q:'サッカーで「ハットトリック」とは？', a:'1人が1試合で3得点すること', note:'元はクリケットというスポーツで使われてた言葉なんだって！サッカーじゃないんかい！！'},
+  {q:'世界最大の「魚」とは何？', a:'ジンベエザメ', note:'シロナガスクジラと答えた人惜しい！！クジラは正しくは「哺乳類」なので魚ではありません！！'},
+  {q:'タツノオトシゴで、子どもをお腹の袋で育てるのは？', a:'オス', note:'タツノオトシゴのオスはメスから受け取った卵を2～4週間もお世話をするよ！自然界にもイクメンっているんだね！！'},
+  {q:'靴ひもの先端に付いている小さな部品の名前は？', a:'アグレット', note:'くまのプーさんにも似た名前のキャラクターがいたね！！あれは豚なの？うさぎなの？'},
+  {q:'ナイキのロゴマークとして知られる、勢いやスピードを表した曲線の名前は何でしょう？', a:'スウッシュ', note:'一目見ただけでナイキと分かる象徴的なマークだよね！僕もそんな存在になりたい！'},
+  {q:'ピカチュウの全国図鑑番号は？', a:'25番', note:'ちなみにピカチュウの体重は6㎏！サトシの肩こわれちゃう！！'},
+  {q:'コイキングが進化するとどのポケモンになる？', a:'ギャラドス', note:'「はねる」しか出来なかったポケモンがこんなに強く！なんだか頑張ろうって気持ちになるね！'},
+  {q:'パスタの「アルデンテ」とはどんなゆで加減？', a:'中心に少し歯ごたえが残る硬さ', note:'麺をガラスにぶつけてくっついたらアルデンテの硬さなんだって！試すのは絶対にやめよう！！（めちゃくちゃに怒られるので）'},
+  {q:'玉ねぎを切ると涙が出やすい主な理由は？', a:'硫化アリルという成分が目と鼻から入るから', note:'だからゴーグルをつけてもあんまり意味ないんだって！聞いてるか、調理実習でドヤ顔でゴーグルしてたかつての俺よ！！'},
+  {q:'空気抵抗のない真空中で、ハンマーと羽を同じ高さから落とすとどうなる？', a:'ほぼ同時に落ちる', note:'「空気抵抗のない真空中で」というのが大きなヒント！外したからって寝てる僕の顔にハンマーを落とすのはやめようね！！'},
+  {q:'虹がいろいろな色に分かれて見える主な理由は？', a:'光が水滴で屈折・反射し、色ごとに分かれるから', note:'虹といえば7色というのは世界共通ではないんだって！国によっては2色と考えている国も！そんなわけなくない？'},
+  {q:'アイドル用語の「リリイベ」とは何の略？', a:'リリースイベント', note:'新曲やアルバムを発売するときにやるイベントのこと！僕はこのクイズを作っているときに知りました！'},
+  {q:'グループのメンバー全員を応援している状態を何という？', a:'箱推し', note:'ちなみに書籍の表紙を豪華にしたいときは「箔押し」を使ったりするよね！BQPのみんなはウケてくれてるよね！？'},
+];
+const MAX_TOTAL = 300; // 1チーム最大（クイズ100 + イラスト150 + チャレンジ50）
 
 /* ================================================================
    STATE
@@ -314,6 +385,7 @@ function freshState(){
     scene: 'scoreboard',
     timer: {endsAt:null, remaining:30000, running:false, duration:30000},
     topic: {flatIndex:0, revealed:false},
+    quiz: {view:'intro', index:0, revealed:false},
     gacha: {spinId:0, result:null, winnerTeamId:null, spinning:false},
     prizes: [
       {id:'p1',name:'Amazonギフト券 3,000円',qty:1},
@@ -326,7 +398,7 @@ function freshState(){
 }
 let state = load();
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.teams){ if(!s.gameMaster)s.gameMaster={name:'藤沼',title:'ゲームマスター',photo:null}; return s; }}catch(e){}
+  try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.teams){ if(!s.gameMaster)s.gameMaster={name:'藤沼',title:'ゲームマスター',photo:null}; if(!s.quiz)s.quiz={view:'intro',index:0,revealed:false}; return s; }}catch(e){}
   return freshState();
 }
 function save(broadcast=true){
@@ -436,8 +508,10 @@ function renderStage(){
   const sc=state.scene;
   if(sc!=='timer')stopTimerRaf(); // 他シーンへ移ったらタイマー描画ループを止める
   renderHostBadge(sc);
-  stageLabel.textContent=({scoreboard:'SCOREBOARD',timer:'TIMER',topic:'ILLUST QUIZ',gacha:'PRIZE GACHA',result:'FINAL RESULT'})[sc]||'';
+  document.getElementById('stage').classList.toggle('quiz-scene', sc==='quiz');
+  stageLabel.textContent=({scoreboard:'SCOREBOARD',quiz:'QUIZ',timer:'TIMER',topic:'ILLUST QUIZ',gacha:'PRIZE GACHA',result:'FINAL RESULT'})[sc]||'';
   if(sc==='scoreboard'){renderScoreboard();}
+  else if(sc==='quiz'){renderQuizStage();}
   else if(sc==='timer'){renderTimerStage();}
   else if(sc==='topic'){renderTopicStage();}
   else if(sc==='gacha'){renderGachaStage();}
@@ -483,6 +557,41 @@ function renderResultStage(){
     <div class="host-name">${g.name}<span class="hn-sub">${g.title||'ゲームマスター'}</span></div>
     <div class="host-bubble">🎤「${champ?champ.name+'、優勝おめでとう！':'みんな'}　今日はお疲れさまでした！」</div></div>`;
   stageBody.innerHTML=h;
+}
+
+/* ---- Quiz stage（宝の地図テーマ／羊皮紙） ---- */
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function renderQuizStage(){
+  const q=state.quiz||{view:'intro',index:0,revealed:false};
+  if(q.view==='intro'){
+    stageBody.innerHTML=`<div class="quiz-stage"><div class="parchment">
+      <span class="deco tl">🧭</span><span class="deco br">⚓</span>
+      <div class="quiz-intro-sub">${QUIZ_INTRO.sub}</div>
+      <div class="quiz-intro-title">📜 ${QUIZ_INTRO.title}</div>
+      <div class="quiz-intro-body">${QUIZ_INTRO.body.replace('30秒','<span class="quiz-emph">30秒</span>').replace('記述式','<span class="quiz-emph">記述式</span>')}</div>
+    </div></div>`;
+  }else if(q.view==='outro'){
+    stageBody.innerHTML=`<div class="quiz-stage"><div class="parchment">
+      <span class="deco tl">🗺️</span><span class="deco br">✕</span>
+      <div class="quiz-intro-title">🏁 ${QUIZ_OUTRO.title}</div>
+      <div class="quiz-intro-body" style="text-align:center">${QUIZ_OUTRO.body}</div>
+    </div></div>`;
+  }else{
+    const idx=Math.min(Math.max(0,q.index),QUIZ.length-1);const item=QUIZ[idx];
+    let inner=`<div class="q-num">第 ${idx+1} 問 ／ 全 ${QUIZ.length} 問</div>
+      <div class="q-text">${escapeHtml(item.q)}</div>`;
+    if(q.revealed){
+      inner+=`<div class="q-answer-label">正 解</div><div class="q-answer">${escapeHtml(item.a)}</div>
+        <div class="q-note">💡 ${escapeHtml(item.note)}</div>`;
+    }else{
+      inner+=`<div class="q-hidden">？ ？ ？</div>`;
+    }
+    stageBody.innerHTML=`<div class="quiz-stage"><div class="parchment">
+      <div class="q-seal"><b>${QUIZ_POINT}</b><span>POINT</span></div>
+      <span class="deco tl">🧭</span><span class="deco br">✕</span>
+      ${inner}
+    </div></div>`;
+  }
 }
 
 /* ---- Timer stage (self-running from shared endsAt) ---- */
@@ -585,13 +694,14 @@ document.getElementById('tabs').addEventListener('click',e=>{
 });
 
 function sceneButtons(active){
-  const scenes=[['scoreboard','🏆 得点表'],['timer','⏱ タイマー'],['topic','🎨 お題'],['gacha','🎁 ガチャ'],['result','🎉 結果発表']];
+  const scenes=[['scoreboard','🏆 得点表'],['quiz','📜 クイズ'],['timer','⏱ タイマー'],['topic','🎨 お題'],['gacha','🎁 ガチャ'],['result','🎉 結果発表']];
   return `<div class="scene-btns">`+scenes.map(([k,l])=>
     `<button class="scene-btn ${state.scene===k?'active':''}" data-scene="${k}">${l}</button>`).join('')+`</div>`;
 }
 
 function renderPanel(){
   if(curTab==='score')renderScorePanel();
+  else if(curTab==='quiz')renderQuizPanel();
   else if(curTab==='timer')renderTimerPanel();
   else if(curTab==='topic')renderTopicPanel();
   else if(curTab==='gacha')renderGachaPanel();
@@ -613,8 +723,7 @@ function renderScorePanel(){
         <span class="teamctl-name">${t.name}</span>
         <span class="teamctl-score" style="color:${t.color}">${t.score}</span></div>
       <div class="btnrow"><span class="lbl">クイズ</span>
-        <button class="pbtn good" data-add="${t.id}" data-v="10" data-l="クイズ正解">正解 +10</button>
-        <button class="pbtn mid"  data-add="${t.id}" data-v="5"  data-l="クイズ惜しい">惜しい +5</button></div>
+        <button class="pbtn good" data-add="${t.id}" data-v="5" data-l="クイズ正解">正解 +5</button></div>
       <div class="btnrow"><span class="lbl">イラスト</span>
         <button class="pbtn good" data-add="${t.id}" data-v="10" data-l="イラスト正解">正解 +10</button>
         <button class="pbtn mid"  data-add="${t.id}" data-v="5"  data-l="イラスト近似">近似 +5</button>
@@ -661,6 +770,49 @@ function renderScorePanel(){
 function addPointsSilent(id,delta,label){
   const t=team(id);if(!t)return;t.score=Math.max(0,t.score+delta);
   state.log.unshift({time:nowStr(),team:t.name,delta,label,color:t.color});
+}
+
+/* ---- Quiz panel（フジヌマ男爵からの挑戦状） ---- */
+function setQuiz(patch){state.quiz={...(state.quiz||{view:'intro',index:0,revealed:false}),...patch};state.scene='quiz';save();renderAll();}
+function renderQuizPanel(){
+  const q=state.quiz||{view:'intro',index:0,revealed:false};
+  const idx=Math.min(Math.max(0,q.index),QUIZ.length-1);const item=QUIZ[idx];
+  let h=`<h3>📜 クイズ「フジヌマ男爵からの挑戦状」</h3>
+  <div class="hint">全${QUIZ.length}問・各${QUIZ_POINT}ポイント（記述式）。投影は宝の地図テーマで表示されます。正解チームは下の「正解 +${QUIZ_POINT}」ボタンで加点。</div>
+  <div class="scene-btns">
+    <button class="scene-btn ${q.view==='intro'?'active':''}" data-qv="intro">📜 オープニング</button>
+    <button class="scene-btn ${q.view==='question'?'active':''}" data-qv="question">❓ 問題</button>
+    <button class="scene-btn ${q.view==='outro'?'active':''}" data-qv="outro">🏁 エンディング</button>
+  </div>`;
+  // 問題ナビ
+  h+=`<div class="field"><label>問題を選択</label>
+    <select id="qSel">${QUIZ.map((it,i)=>`<option value="${i}" ${i===idx?'selected':''}>第${i+1}問　${it.q.slice(0,16)}${it.q.length>16?'…':''}</option>`).join('')}</select></div>
+  <div style="border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px">
+    <div class="mini" style="margin:0 0 4px">第${idx+1}問</div>
+    <div style="font-weight:800;font-size:14px;line-height:1.5">${item.q}</div>
+    <div style="margin-top:8px;font-size:14px"><span style="color:var(--muted)">正解：</span><b style="color:var(--accent)">${q.revealed?item.a:'（未公開）'}</b></div>
+  </div>
+  <div class="scene-btns">
+    <button class="scene-btn" id="qPrev">◀ 前の問題</button>
+    <button class="scene-btn" id="qReveal">${q.revealed?'🙈 答えを隠す':'👁 答えを表示'}</button>
+    <button class="scene-btn" id="qNext">次の問題 ▶</button>
+  </div>
+  <button class="ghostbtn" id="qTimer">⏱ シンキングタイム30秒を開始</button>
+  <h3 style="margin-top:18px">正解チームに加点（+${QUIZ_POINT}）</h3>
+  <div style="display:flex;flex-direction:column;gap:7px">
+    ${state.teams.map(t=>`<button class="pbtn good" style="text-align:left;display:flex;align-items:center;gap:9px;padding:10px 12px" data-qadd="${t.id}">
+      <span class="dot" style="background:${t.color}"></span><span style="flex:1;font-weight:800">${t.name}</span>
+      <span style="font-weight:900">正解 +${QUIZ_POINT}</span><span style="color:var(--muted);font-weight:800">（${t.score}）</span></button>`).join('')}
+  </div>`;
+  panel.innerHTML=h;
+  panel.querySelectorAll('[data-qv]').forEach(b=>b.onclick=()=>setQuiz({view:b.dataset.qv}));
+  document.getElementById('qSel').onchange=(e)=>setQuiz({view:'question',index:+e.target.value,revealed:false});
+  document.getElementById('qPrev').onclick=()=>setQuiz({view:'question',index:Math.max(0,idx-1),revealed:false});
+  document.getElementById('qNext').onclick=()=>setQuiz({view:'question',index:Math.min(QUIZ.length-1,idx+1),revealed:false});
+  document.getElementById('qReveal').onclick=()=>{const nv=!q.revealed;setQuiz({view:'question',revealed:nv});if(nv&&!isPresent){SFX.ding();confetti(60);}};
+  document.getElementById('qTimer').onclick=()=>startTimer(30000);
+  panel.querySelectorAll('[data-qadd]').forEach(b=>b.onclick=()=>addPoints(+b.dataset.qadd,QUIZ_POINT,`クイズ第${idx+1}問 正解`));
+  bindSceneBtns();
 }
 
 /* ---- Timer panel ---- */
@@ -790,7 +942,7 @@ function setHostPhoto(file){
 function renderInfoPanel(){
   const tt=[
     ['20:00-20:05','ルール説明・チーム分け','全員集合'],
-    ['20:05-20:35','クイズ 20問','5人で1問（シンキング30秒）'],
+    ['20:05-20:35','クイズ 20問（フジヌマ男爵からの挑戦状）','5人で1問（シンキング30秒／各5点）'],
     ['20:35-21:35','イラスト当て 15問','4人絵描き・1人回答（1分＋30秒）'],
     ['21:35-21:55','チャレンジゲーム 5種目','1人1種の5競技'],
     ['21:55-22:00','総合結果・景品発表','表彰・写真撮影'],
@@ -802,10 +954,10 @@ function renderInfoPanel(){
   </div>
   <h3>配点ルール</h3>
   <div style="font-size:13px;color:var(--muted);line-height:1.9;margin-bottom:16px">
-   ・クイズ20問：正解 <b style="color:#fff">10</b> / 惜しい <b style="color:#fff">5</b>（最大200）<br>
+   ・クイズ20問：正解 <b style="color:#fff">5</b>（記述式・最大100）<br>
    ・イラスト15問：正解 <b style="color:#fff">10</b> / 近似 <b style="color:#fff">5</b> / 面白さ賞 <b style="color:#fff">5</b>（最大150）<br>
    ・チャレンジ5種目：順位制 <b style="color:#fff">10/8/6/4/2</b>（最大50）<br>
-   ・合計 最大 <b style="color:var(--accent)">350</b>pt / チーム
+   ・合計 最大 <b style="color:var(--accent)">300</b>pt / チーム
   </div>
   <h3>🎪 ゲームマスター（主催者）</h3>
   <div class="hint">写真を登録すると、スコアボード左下と結果発表画面に主催者として表示されます。（写真はこの端末内にのみ保存されます）</div>
@@ -869,9 +1021,13 @@ if(isPresent){
 addEventListener('pointerdown',()=>{AC()&&AC().resume&&AC().resume();},{once:true});
 addEventListener('keydown',e=>{
   if(isPresent)return;
+  const tag=(e.target.tagName||'').toLowerCase();if(tag==='input'||tag==='select'||tag==='textarea')return;
   if(e.key==='ArrowRight'&&curTab==='topic'){document.getElementById('tNext')?.click();}
   if(e.key==='ArrowLeft'&&curTab==='topic'){document.getElementById('tPrev')?.click();}
   if(e.key===' '&&curTab==='topic'){e.preventDefault();document.getElementById('tReveal')?.click();}
+  if(e.key==='ArrowRight'&&curTab==='quiz'){document.getElementById('qNext')?.click();}
+  if(e.key==='ArrowLeft'&&curTab==='quiz'){document.getElementById('qPrev')?.click();}
+  if(e.key===' '&&curTab==='quiz'){e.preventDefault();document.getElementById('qReveal')?.click();}
 });
 
 renderAll();
