@@ -193,6 +193,39 @@ body.present .wrap{grid-template-columns:1fr;padding:0;max-width:none}
 body.present .stage{min-height:100vh;border:none;border-radius:0}
 canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
 .footer{grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;padding:6px}
+
+/* ---------- スマホ・タブレット対応 ---------- */
+@media(max-width:640px){
+  .topbar{flex-wrap:wrap;gap:8px;padding:10px 12px;position:static}
+  .topbar h1{font-size:16px}
+  .topbar h1 .sub{display:none}
+  .spacer{display:none}
+  .total-pill{font-size:12px;padding:6px 10px}
+  #btnPresent{display:none} /* 別ウィンドウ投影はスマホ非対応環境が多いため隠す */
+  .tbtn{padding:8px 12px;font-size:13px}
+  .wrap{padding:10px;gap:12px}
+  .stage{min-height:46vh;padding:14px}
+  .stage-label{font-size:10px;top:10px;right:12px}
+  .panel{max-height:none;padding:14px}
+  .tabs{position:sticky;top:0;z-index:10}
+  .tab{font-size:12px;padding:12px 3px}
+  .rankrow{gap:8px;padding:10px 12px;margin-bottom:9px}
+  .rankrow .rank,.rankrow .medal{width:38px}
+  .rankrow .tname{width:auto;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rankrow .tmembers{display:none}
+  .rankrow .barwrap{display:none} /* 狭い画面ではバー省略・数字を大きく */
+  .rankrow .score{width:auto;min-width:52px}
+  .board-title{font-size:24px}
+  .pbtn{padding:9px 12px;font-size:14px} /* タップしやすく */
+  .scene-btn{min-width:60px;font-size:12px;padding:11px 4px}
+  .podium{gap:10px}
+  .pod .pblock{width:clamp(72px,26vw,120px)}
+}
+/* スマホ横向き / 投影ミラーリング時はバーを復活 */
+@media(max-width:640px) and (orientation:landscape){
+  .stage{min-height:92vh}
+  .rankrow .barwrap{display:block}
+}
 </style>
 </head>
 <body>
