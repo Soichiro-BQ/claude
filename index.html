@@ -7,281 +7,310 @@
 <style>
 /* ============================================================
    合宿レク イベント進行＆得点管理ツール
-   単一ファイル / オフライン動作 / 投影対応
+   デザイン: Apple Japan (awesome-design-md-jp / apple DESIGN.md 準拠)
+   - フォント: SF Pro JP 先頭 / ヒラギノ角ゴ Pro（ProNではない）
+   - テキスト: #1d1d1f（純黒は不使用）/ ダーク上は #f5f5f7
+   - 本文: 17px / 1.47 / letter-spacing -0.357px（負のトラッキング）
+   - ボタン: 980px ピル型 / Apple Blue #0071e3
+   - ナビ: すりガラス rgba(0,0,0,.8) + blur(20px)
+   - 投影ステージ: ヒーロー流儀の #000（投影グレア対策を兼ねる）
+   ※ クイズ「フジヌマ男爵からの挑戦状」の羊皮紙デザインのみ現行を維持
    ============================================================ */
 :root{
-  --bg:#0b1020; --bg2:#131a33; --panel:#182142; --panel2:#1f2a52;
-  --line:#2c3a6e; --text:#eef2ff; --muted:#9aa6d6;
-  --accent:#ffd23f; --good:#31d97a; --bad:#ff5d6c;
-  --t1:#ff6b6b; --t2:#4da3ff; --t3:#33d69f; --t4:#ffa53d; --t5:#c084fc;
-  --shadow:0 10px 40px rgba(0,0,0,.45);
+  --bg:#f5f5f7; --panel:#fff; --panel2:#f5f5f7;
+  --line:#d2d2d7; --text:#1d1d1f; --muted:#6e6e73;
+  --accent:#0071e3; --link:#0066cc; --accent-dark:#2997ff;
+  --good:#34c759; --bad:#ff3b30;
+  --on-dark:#f5f5f7; --on-dark-muted:rgba(255,255,255,.56);
+  --card-shadow:3px 5px 30px rgba(0,0,0,.22);
+  --soft-shadow:0 2px 12px rgba(0,0,0,.06);
+  --focus-ring:0 0 0 3px rgba(0,113,227,.2);
   --radius:18px;
+  --font-text:"SF Pro JP","SF Pro Text","SF Pro Icons","Hiragino Kaku Gothic Pro","ヒラギノ角ゴ Pro W3",メイリオ,Meiryo,"ＭＳ Ｐゴシック","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --font-display:"SF Pro JP","SF Pro Display","SF Pro Icons","Hiragino Kaku Gothic Pro","ヒラギノ角ゴ Pro W3",メイリオ,Meiryo,"ＭＳ Ｐゴシック","Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{
-  font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,sans-serif;
-  background:radial-gradient(1200px 800px at 20% -10%,#1b2550 0%,transparent 60%),
-             radial-gradient(1000px 700px at 100% 0%,#241a4d 0%,transparent 55%),
-             var(--bg);
-  color:var(--text); overflow-x:hidden; min-height:100vh;
+  font-family:var(--font-text);
+  font-size:17px;line-height:1.47;letter-spacing:-.357px;
+  background:var(--bg);color:var(--text);
+  overflow-x:hidden;min-height:100vh;
 }
-button{font-family:inherit;cursor:pointer;border:none;color:inherit;font-weight:700}
+button{font-family:inherit;cursor:pointer;border:none;color:inherit;font-weight:400;letter-spacing:-.2px}
 input,select{font-family:inherit}
 .hidden{display:none !important}
 
-/* ---------- App shell ---------- */
+/* ---------- App shell（すりガラスナビ） ---------- */
 .topbar{
-  display:flex;align-items:center;gap:14px;padding:12px 20px;
-  background:rgba(12,17,36,.72);backdrop-filter:blur(8px);
-  border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;gap:14px;padding:0 22px;min-height:48px;
+  background:rgba(0,0,0,.8);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  color:rgba(255,255,255,.92);
+  position:sticky;top:0;z-index:50;
 }
-.topbar h1{font-size:19px;letter-spacing:.5px;white-space:nowrap}
-.topbar h1 .sub{font-size:12px;color:var(--muted);font-weight:600;margin-left:8px}
+.topbar h1{font-family:var(--font-display);font-size:17px;font-weight:600;letter-spacing:-.2px;white-space:nowrap}
+.topbar h1 .sub{font-size:12px;color:rgba(255,255,255,.56);font-weight:400;margin-left:10px;letter-spacing:normal}
 .spacer{flex:1}
 .tbtn{
-  background:var(--panel);border:1px solid var(--line);padding:9px 15px;border-radius:12px;
-  font-size:14px;display:inline-flex;align-items:center;gap:7px;transition:.15s;
+  background:transparent;border:1px solid rgba(255,255,255,.35);color:rgba(255,255,255,.92);
+  padding:6px 16px;border-radius:980px;font-size:12px;
+  display:inline-flex;align-items:center;gap:6px;transition:background .2s,border-color .2s;
 }
-.tbtn:hover{background:var(--panel2);transform:translateY(-1px)}
-.tbtn.primary{background:linear-gradient(135deg,#ffd23f,#ff9d3d);color:#3a2600}
-.total-pill{font-size:13px;color:var(--muted);background:var(--panel);border:1px solid var(--line);
-  padding:7px 13px;border-radius:20px;white-space:nowrap}
+.tbtn:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.6)}
+.tbtn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.total-pill{font-size:12px;color:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.25);
+  padding:5px 14px;border-radius:980px;white-space:nowrap;letter-spacing:normal}
 
 /* ---------- Layout ---------- */
-.wrap{display:grid;grid-template-columns:1fr 460px;gap:18px;padding:18px;max-width:1700px;margin:0 auto}
+.wrap{display:grid;grid-template-columns:1fr 460px;gap:20px;padding:20px;max-width:1680px;margin:0 auto}
 @media(max-width:1150px){.wrap{grid-template-columns:1fr}}
 
-/* ---------- Stage (投影エリア) ---------- */
+/* ---------- Stage（投影エリア / ヒーロー黒） ---------- */
 .stage{
-  background:linear-gradient(160deg,var(--bg2),#0d132a);
-  border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
-  min-height:560px;padding:26px;position:relative;overflow:hidden;
+  background:#000;color:var(--on-dark);
+  border-radius:var(--radius);
+  min-height:560px;padding:28px;position:relative;overflow:hidden;
 }
-.stage-label{position:absolute;top:14px;right:18px;font-size:12px;color:var(--muted);
-  letter-spacing:2px;font-weight:700;opacity:.7}
+.stage-label{position:absolute;top:16px;right:20px;font-size:11px;color:rgba(255,255,255,.4);
+  letter-spacing:2px;font-weight:600}
 
-/* ---------- Control dock ---------- */
-.dock{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-  box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
-.tabs{display:flex;border-bottom:1px solid var(--line);background:rgba(0,0,0,.15)}
-.tab{flex:1;padding:13px 6px;background:transparent;color:var(--muted);font-size:13px;
-  border-bottom:3px solid transparent;transition:.15s}
-.tab.active{color:var(--text);border-bottom-color:var(--accent);background:rgba(255,210,63,.06)}
+/* ---------- Control dock（ライトカード） ---------- */
+.dock{background:var(--panel);border-radius:var(--radius);
+  box-shadow:var(--soft-shadow);overflow:hidden;display:flex;flex-direction:column}
+.tabs{display:flex;border-bottom:1px solid var(--line);background:var(--panel)}
+.tab{flex:1;padding:14px 4px;background:transparent;color:rgba(0,0,0,.56);font-size:12px;
+  border-bottom:2px solid transparent;transition:color .2s;letter-spacing:normal}
+.tab.active{color:var(--text);font-weight:600;border-bottom-color:var(--text)}
 .tab:hover{color:var(--text)}
-.panel{padding:18px;overflow-y:auto;max-height:calc(100vh - 190px)}
-.panel h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.hint{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px}
+.panel{padding:20px;overflow-y:auto;max-height:calc(100vh - 190px)}
+.panel h3{font-family:var(--font-display);font-size:17px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;letter-spacing:-.2px}
+.hint{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px;letter-spacing:normal}
 
-/* ---------- Scoreboard ---------- */
-.board-title{text-align:center;font-size:clamp(22px,3vw,40px);font-weight:800;margin-bottom:6px;
-  background:linear-gradient(90deg,#ffd23f,#ff9d3d,#ff6b9d);-webkit-background-clip:text;background-clip:text;color:transparent}
-.board-sub{text-align:center;color:var(--muted);font-size:14px;margin-bottom:22px}
+/* ---------- Scoreboard（黒ヒーロー上） ---------- */
+.board-title{font-family:var(--font-display);text-align:center;font-size:clamp(24px,3vw,40px);font-weight:600;
+  line-height:1.1;letter-spacing:-.4px;margin-bottom:8px;color:var(--on-dark)}
+.board-sub{text-align:center;color:var(--on-dark-muted);font-size:14px;margin-bottom:24px;letter-spacing:normal}
 .rankrow{
-  display:flex;align-items:center;gap:16px;padding:14px 18px;margin-bottom:12px;border-radius:16px;
-  background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
-  border:1px solid var(--line);position:relative;transition:transform .55s cubic-bezier(.2,.9,.3,1.2);
+  display:flex;align-items:center;gap:16px;padding:14px 20px;margin-bottom:12px;border-radius:16px;
+  background:rgba(255,255,255,.08);
+  position:relative;transition:transform .55s cubic-bezier(.2,.9,.3,1.2),box-shadow .3s;
 }
-.rankrow .rank{font-size:clamp(26px,3vw,44px);font-weight:900;width:64px;text-align:center;flex:none}
-.rankrow .medal{font-size:clamp(28px,3.2vw,46px);width:64px;text-align:center;flex:none}
-.rankrow .tname{font-size:clamp(18px,2.1vw,30px);font-weight:800;flex:none;width:clamp(150px,16vw,240px)}
-.rankrow .tmembers{font-size:12px;color:var(--muted);margin-top:3px;font-weight:600}
-.rankrow .barwrap{flex:1;height:26px;background:rgba(0,0,0,.28);border-radius:14px;overflow:hidden;position:relative}
-.rankrow .bar{height:100%;border-radius:14px;transition:width .8s cubic-bezier(.2,.9,.3,1);min-width:2px;
-  box-shadow:0 0 20px rgba(255,255,255,.15) inset}
-.rankrow .score{font-size:clamp(26px,3vw,46px);font-weight:900;width:clamp(110px,11vw,150px);text-align:right;flex:none;
-  font-variant-numeric:tabular-nums}
-.rankrow.leader{border-color:var(--accent);box-shadow:0 0 34px rgba(255,210,63,.28)}
+.rankrow .rank{font-family:var(--font-display);font-size:clamp(24px,2.6vw,38px);font-weight:600;width:60px;text-align:center;flex:none;color:var(--on-dark-muted)}
+.rankrow .medal{font-size:clamp(26px,3vw,42px);width:60px;text-align:center;flex:none}
+.rankrow .tname{font-family:var(--font-display);font-size:clamp(17px,2vw,27px);font-weight:600;letter-spacing:-.2px;flex:none;width:clamp(150px,17vw,250px);color:var(--on-dark)}
+.rankrow .tmembers{font-size:12px;color:var(--on-dark-muted);margin-top:3px;font-weight:400;letter-spacing:normal}
+.rankrow .barwrap{flex:1;height:22px;background:rgba(255,255,255,.12);border-radius:980px;overflow:hidden;position:relative}
+.rankrow .bar{height:100%;border-radius:980px;transition:width .8s cubic-bezier(.2,.9,.3,1);min-width:2px}
+.rankrow .score{font-family:var(--font-display);font-size:clamp(26px,3vw,44px);font-weight:600;width:clamp(100px,10vw,140px);text-align:right;flex:none;
+  font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.rankrow.leader{box-shadow:0 0 0 2px var(--accent-dark)}
 .flash-up{animation:flashUp .9s ease}
-@keyframes flashUp{0%{background:rgba(49,217,122,.5)}100%{}}
+@keyframes flashUp{0%{background:rgba(52,199,89,.35)}100%{}}
 .flash-down{animation:flashDown .9s ease}
-@keyframes flashDown{0%{background:rgba(255,93,108,.4)}100%{}}
+@keyframes flashDown{0%{background:rgba(255,59,48,.3)}100%{}}
 
 /* podium (result) */
-.podium{display:flex;justify-content:center;align-items:flex-end;gap:22px;margin:10px 0 26px}
+.podium{display:flex;justify-content:center;align-items:flex-end;gap:24px;margin:12px 0 28px}
 .pod{display:flex;flex-direction:column;align-items:center;gap:8px}
 .pod .pcap{font-size:44px}
-.pod .pname{font-weight:800;font-size:clamp(16px,1.8vw,24px)}
-.pod .pscore{font-weight:900;font-size:clamp(20px,2.4vw,32px);color:var(--accent)}
+.pod .pname{font-family:var(--font-display);font-weight:600;font-size:clamp(15px,1.7vw,23px);letter-spacing:-.2px;color:var(--on-dark)}
+.pod .pscore{font-family:var(--font-display);font-weight:600;font-size:clamp(19px,2.2vw,30px);color:var(--accent-dark);letter-spacing:-.3px}
 .pod .pblock{width:clamp(90px,10vw,150px);border-radius:14px 14px 0 0;display:flex;align-items:flex-start;
-  justify-content:center;padding-top:10px;font-size:34px;font-weight:900;color:#0009}
-.pod.p1 .pblock{height:190px;background:linear-gradient(180deg,#ffe27a,#f5b301)}
-.pod.p2 .pblock{height:140px;background:linear-gradient(180deg,#e6ecff,#aeb8d8)}
-.pod.p3 .pblock{height:105px;background:linear-gradient(180deg,#ffcf9e,#d98b4a)}
+  justify-content:center;padding-top:10px;font-family:var(--font-display);font-size:32px;font-weight:600;color:rgba(0,0,0,.5)}
+.pod.p1 .pblock{height:190px}
+.pod.p2 .pblock{height:140px}
+.pod.p3 .pblock{height:105px}
 
 /* ---------- Timer ---------- */
 .timer-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:480px}
-.timer-label{font-size:clamp(18px,2.5vw,30px);color:var(--muted);font-weight:700;margin-bottom:6px}
-.timer-num{font-size:clamp(120px,26vw,340px);font-weight:900;line-height:1;font-variant-numeric:tabular-nums;
-  letter-spacing:-4px;text-shadow:0 0 60px rgba(255,210,63,.25)}
-.timer-num.warn{color:var(--accent)}
-.timer-num.danger{color:var(--bad);animation:pulse .5s infinite alternate}
+.timer-label{font-family:var(--font-display);font-size:clamp(17px,2.2vw,28px);color:var(--on-dark-muted);font-weight:600;margin-bottom:6px;letter-spacing:-.2px}
+.timer-num{font-family:var(--font-display);font-size:clamp(120px,26vw,340px);font-weight:600;line-height:1.05;font-variant-numeric:tabular-nums;
+  letter-spacing:-6px;color:var(--on-dark)}
+.timer-num.warn{color:var(--accent-dark)}
+.timer-num.danger{color:#ff453a;animation:pulse .5s infinite alternate}
 @keyframes pulse{to{transform:scale(1.06)}}
-.timer-done{font-size:clamp(50px,10vw,130px);font-weight:900;color:var(--accent);animation:pop .4s}
+.timer-done{font-family:var(--font-display);font-size:clamp(50px,10vw,130px);font-weight:600;letter-spacing:-2px;color:var(--accent-dark);animation:pop .4s}
 @keyframes pop{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
 
 /* ---------- Topic (illustration) ---------- */
 .topic-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:480px;text-align:center}
-.topic-count{color:var(--muted);font-size:18px;font-weight:700;margin-bottom:14px}
-.topic-set{color:var(--accent);font-size:16px;font-weight:700;margin-bottom:20px;letter-spacing:1px}
-.topic-answer{font-size:clamp(48px,9vw,120px);font-weight:900;
-  background:linear-gradient(90deg,#ffd23f,#ff9d3d);-webkit-background-clip:text;background-clip:text;color:transparent}
-.topic-hidden{font-size:clamp(60px,12vw,160px);font-weight:900;color:var(--muted);letter-spacing:20px}
+.topic-count{color:var(--on-dark-muted);font-size:17px;font-weight:400;margin-bottom:14px;letter-spacing:normal}
+.topic-set{color:var(--accent-dark);font-size:17px;font-weight:600;margin-bottom:22px;letter-spacing:normal}
+.topic-answer{font-family:var(--font-display);font-size:clamp(48px,9vw,120px);font-weight:600;line-height:1.1;letter-spacing:-1px;color:var(--on-dark)}
+.topic-hidden{font-family:var(--font-display);font-size:clamp(60px,12vw,160px);font-weight:600;color:rgba(255,255,255,.35);letter-spacing:18px}
 
 /* ---------- Gacha ---------- */
 .gacha-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:480px;text-align:center}
-.gacha-title{font-size:clamp(24px,3vw,40px);font-weight:900;margin-bottom:24px;
-  background:linear-gradient(90deg,#ff6b9d,#ffd23f);-webkit-background-clip:text;background-clip:text;color:transparent}
-.reel{width:min(80%,640px);height:150px;overflow:hidden;border:4px solid var(--accent);border-radius:20px;
-  background:#0009;position:relative;box-shadow:0 0 50px rgba(255,210,63,.3)}
+.gacha-title{font-family:var(--font-display);font-size:clamp(24px,3vw,40px);font-weight:600;line-height:1.1;letter-spacing:-.4px;margin-bottom:26px;color:var(--on-dark)}
+.reel{width:min(80%,640px);height:150px;overflow:hidden;border:1px solid rgba(255,255,255,.25);border-radius:20px;
+  background:rgba(255,255,255,.06);position:relative}
 .reel::before,.reel::after{content:"";position:absolute;left:0;right:0;height:40px;z-index:2;pointer-events:none}
 .reel::before{top:0;background:linear-gradient(#000c,transparent)}
 .reel::after{bottom:0;background:linear-gradient(transparent,#000c)}
 .reel-track{display:flex;flex-direction:column;transition:none}
 .reel-item{height:150px;display:flex;align-items:center;justify-content:center;
-  font-size:clamp(24px,4vw,52px);font-weight:900;flex:none;white-space:nowrap;padding:0 24px;
-  overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.gacha-result{margin-top:22px;font-size:clamp(30px,5vw,70px);font-weight:900;color:var(--accent);
-  min-height:80px;display:flex;align-items:center;gap:14px}
-.gacha-win-team{font-size:clamp(18px,2.2vw,30px);color:var(--muted);font-weight:700;margin-top:6px}
+  font-family:var(--font-display);font-size:clamp(24px,4vw,48px);font-weight:600;letter-spacing:-.5px;flex:none;white-space:nowrap;padding:0 24px;
+  overflow:hidden;text-overflow:ellipsis;max-width:100%;color:var(--on-dark)}
+.gacha-result{margin-top:24px;font-family:var(--font-display);font-size:clamp(28px,4.5vw,62px);font-weight:600;letter-spacing:-.5px;color:var(--accent-dark);
+  min-height:76px;display:flex;align-items:center;gap:14px}
+.gacha-win-team{font-size:clamp(17px,2vw,26px);color:var(--on-dark-muted);font-weight:400;margin-top:6px;letter-spacing:normal}
 
-/* ---------- Score control cards ---------- */
-.teamctl{border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:12px;background:rgba(0,0,0,.14)}
+/* ---------- Score control cards（ライト） ---------- */
+.teamctl{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;background:var(--panel)}
 .teamctl-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.dot{width:16px;height:16px;border-radius:50%;flex:none}
-.teamctl-name{font-weight:800;font-size:15px}
-.teamctl-score{margin-left:auto;font-weight:900;font-size:22px;font-variant-numeric:tabular-nums}
+.dot{width:14px;height:14px;border-radius:50%;flex:none}
+.teamctl-name{font-weight:600;font-size:15px;letter-spacing:-.2px}
+.teamctl-score{margin-left:auto;font-family:var(--font-display);font-weight:600;font-size:22px;font-variant-numeric:tabular-nums}
 .btnrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
-.btnrow .lbl{font-size:11px;color:var(--muted);width:52px;display:flex;align-items:center;font-weight:700}
-.pbtn{background:var(--panel2);border:1px solid var(--line);padding:7px 11px;border-radius:9px;font-size:13px;transition:.12s}
-.pbtn:hover{transform:translateY(-1px);background:#26326a}
-.pbtn.good{background:rgba(49,217,122,.16);border-color:rgba(49,217,122,.4)}
-.pbtn.mid{background:rgba(255,210,63,.14);border-color:rgba(255,210,63,.4)}
-.pbtn.sub{background:rgba(255,93,108,.14);border-color:rgba(255,93,108,.4)}
-.custom-in{width:58px;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:6px;border-radius:8px;text-align:center}
+.btnrow .lbl{font-size:12px;color:var(--muted);width:52px;display:flex;align-items:center;font-weight:400;letter-spacing:normal}
+.pbtn{background:var(--panel2);padding:7px 15px;border-radius:980px;font-size:13px;color:var(--text);transition:background .2s;letter-spacing:normal}
+.pbtn:hover{background:#e8e8ed}
+.pbtn.good{background:rgba(52,199,89,.15);color:#1d7a35}
+.pbtn.good:hover{background:rgba(52,199,89,.25)}
+.pbtn.mid{background:rgba(255,149,0,.15);color:#9a5b00}
+.pbtn.mid:hover{background:rgba(255,149,0,.25)}
+.pbtn.sub{background:rgba(255,59,48,.12);color:#d70015}
+.pbtn.sub:hover{background:rgba(255,59,48,.22)}
+.custom-in{width:58px;background:var(--panel);border:1px solid var(--line);color:var(--text);padding:6px;border-radius:10px;text-align:center}
+.custom-in:focus{outline:none;box-shadow:var(--focus-ring);border-color:var(--accent)}
 
 /* generic form bits */
 .field{margin-bottom:12px}
-.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:700}
-.field input,.field select{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);
-  padding:10px;border-radius:10px;font-size:14px}
-.bigbtn{width:100%;padding:13px;border-radius:12px;font-size:15px;background:linear-gradient(135deg,#ffd23f,#ff9d3d);color:#3a2600;margin-top:4px}
-.bigbtn.spin{background:linear-gradient(135deg,#ff6b9d,#c084fc);color:#fff}
-.bigbtn:disabled{opacity:.5;cursor:not-allowed}
-.ghostbtn{width:100%;padding:11px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:14px;margin-top:8px}
-.dangerbtn{background:rgba(255,93,108,.16);border:1px solid rgba(255,93,108,.4)}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:400;letter-spacing:normal}
+.field input,.field select{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);
+  padding:10px 12px;border-radius:12px;font-size:14px}
+.field input:focus,.field select:focus{outline:none;box-shadow:var(--focus-ring);border-color:var(--accent)}
+.bigbtn{width:100%;padding:12px 22px;border-radius:980px;font-size:17px;font-weight:400;background:var(--accent);color:#fff;margin-top:4px;transition:background .2s;letter-spacing:-.2px}
+.bigbtn:hover{background:#0077ed}
+.bigbtn.spin{background:#1d1d1f;color:#fff}
+.bigbtn.spin:hover{background:#333336}
+.bigbtn:disabled{opacity:.4;cursor:not-allowed}
+.ghostbtn{width:100%;padding:10px 22px;border-radius:980px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:14px;margin-top:8px;transition:background .2s;letter-spacing:normal}
+.ghostbtn:hover{background:rgba(0,113,227,.06)}
+.dangerbtn{border-color:var(--bad);color:#d70015}
+.dangerbtn:hover{background:rgba(255,59,48,.06)}
 
 /* history / lists */
-.log{font-size:12px;color:var(--muted);max-height:180px;overflow-y:auto;border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
-.logrow{padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.06);display:flex;gap:8px}
-.logrow .lt{color:#7c88bd;flex:none}
-.prizerow{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-radius:10px;margin-bottom:7px;background:rgba(0,0,0,.12)}
-.prizerow .pn{flex:1;font-size:14px;font-weight:700}
-.prizerow .pq{font-size:12px;color:var(--muted)}
-.prizerow .rm{background:rgba(255,93,108,.16);border:1px solid rgba(255,93,108,.35);border-radius:8px;padding:5px 9px;font-size:12px}
+.log{font-size:12px;color:var(--muted);max-height:180px;overflow-y:auto;border-top:1px solid var(--line);margin-top:12px;padding-top:10px;letter-spacing:normal}
+.logrow{padding:5px 0;border-bottom:1px solid rgba(0,0,0,.05);display:flex;gap:8px}
+.logrow .lt{color:#86868b;flex:none}
+.prizerow{display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:7px;background:var(--panel)}
+.prizerow .pn{flex:1;font-size:14px;font-weight:600;letter-spacing:-.2px}
+.prizerow .pq{font-size:12px;color:var(--muted);letter-spacing:normal}
+.prizerow .rm{background:rgba(255,59,48,.12);color:#d70015;border-radius:980px;padding:5px 12px;font-size:12px;letter-spacing:normal}
 .scene-btns{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
-.scene-btn{flex:1;min-width:70px;padding:10px 6px;border-radius:11px;background:var(--panel2);border:1px solid var(--line);font-size:13px}
-.scene-btn.active{background:linear-gradient(135deg,#4da3ff,#33d69f);color:#062}
-.tt-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.08);font-size:13px}
-.tt-row .tt-time{color:var(--accent);font-weight:800;width:110px;flex:none}
-.mini{font-size:12px;color:var(--muted);margin-top:6px}
-.chip{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:12px;margin:2px}
+.scene-btn{flex:1;min-width:70px;padding:9px 6px;border-radius:980px;background:var(--panel2);color:var(--text);font-size:13px;transition:background .2s;letter-spacing:normal}
+.scene-btn:hover{background:#e8e8ed}
+.scene-btn.active{background:var(--accent);color:#fff}
+.tt-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:13px;letter-spacing:normal}
+.tt-row .tt-time{color:var(--accent);font-weight:600;width:110px;flex:none;font-variant-numeric:tabular-nums}
+.mini{font-size:12px;color:var(--muted);margin-top:6px;letter-spacing:normal}
+.chip{display:inline-block;background:rgba(255,255,255,.1);border-radius:980px;padding:5px 14px;font-size:13px;margin:2px;color:var(--on-dark);letter-spacing:normal}
 
 /* present mode fills screen */
 body.present .topbar,body.present .dock{display:none}
 body.present .wrap{grid-template-columns:1fr;padding:0;max-width:none}
-body.present .stage{min-height:100vh;border:none;border-radius:0}
+body.present .stage{min-height:100vh;border-radius:0}
 canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
+.footer{grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;padding:6px;letter-spacing:normal}
 
-/* ---------- ゲームマスター（主催者） ---------- */
-.host-avatar{border-radius:50%;overflow:hidden;border:3px solid var(--accent);background:var(--panel2);
-  display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+/* ---------- ゲームマスター（主催者 / 黒ステージ上） ---------- */
+.host-avatar{border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.9);background:rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;flex:none}
 .host-avatar img{width:100%;height:100%;object-fit:cover;display:block}
-.host-badge{position:absolute;left:18px;bottom:16px;display:flex;align-items:center;gap:11px;z-index:3;
-  background:rgba(0,0,0,.4);padding:7px 18px 7px 7px;border-radius:44px;border:1px solid var(--line);backdrop-filter:blur(4px)}
-.host-badge .hb-txt{font-size:15px;font-weight:800;line-height:1.2}
-.host-badge .hb-sub{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px}
+.host-badge{position:absolute;left:20px;bottom:18px;display:flex;align-items:center;gap:11px;z-index:3;
+  background:rgba(255,255,255,.12);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  padding:7px 18px 7px 7px;border-radius:980px}
+.host-badge .hb-txt{font-family:var(--font-display);font-size:15px;font-weight:600;line-height:1.2;color:var(--on-dark);letter-spacing:-.2px}
+.host-badge .hb-sub{font-size:10px;color:var(--on-dark-muted);font-weight:400;letter-spacing:1px}
 .host-result{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:8px}
-.host-bubble{background:rgba(255,210,63,.12);border:1px solid rgba(255,210,63,.4);border-radius:16px;
-  padding:10px 20px;font-size:clamp(14px,1.6vw,20px);font-weight:700;max-width:80%;text-align:center}
-.host-name{font-size:clamp(14px,1.6vw,20px);font-weight:800}
-.host-name .hn-sub{color:var(--muted);font-size:12px;font-weight:700;margin-left:6px}
+.host-bubble{background:rgba(255,255,255,.1);border-radius:18px;
+  padding:12px 22px;font-size:clamp(14px,1.6vw,19px);font-weight:400;max-width:80%;text-align:center;color:var(--on-dark);letter-spacing:normal}
+.host-name{font-family:var(--font-display);font-size:clamp(14px,1.6vw,19px);font-weight:600;color:var(--on-dark);letter-spacing:-.2px}
+.host-name .hn-sub{color:var(--on-dark-muted);font-size:12px;font-weight:400;margin-left:6px;letter-spacing:normal}
 @media(max-width:640px){.host-badge{left:10px;bottom:10px;padding:5px 12px 5px 5px}.host-badge .hb-txt{font-size:13px}}
 
-/* ---------- クイズ「フジヌマ男爵からの挑戦状」宝の地図テーマ ---------- */
+/* ---------- クイズ「フジヌマ男爵からの挑戦状」宝の地図テーマ（現行維持） ---------- */
 /* ハレーション対策：羊皮紙は白ではなく落ち着いた琥珀色＋暗いビネットで輝度を抑える */
 .stage.quiz-scene{background:radial-gradient(120% 120% at 50% 30%,#2a1c0e 0%,#1a1108 60%,#0d0803 100%)}
 .quiz-stage{min-height:520px;display:flex;align-items:center;justify-content:center;padding:8px}
 .parchment{position:relative;width:min(94%,900px);border-radius:10px;padding:clamp(26px,4vw,54px);
-  font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP","MS Mincho",serif;color:#3a2410;text-align:center;
+  font-family:"Yu Mincho","Hiragino Mincho ProN","Noto Serif JP","MS Mincho",serif;color:#3a2410;text-align:center;letter-spacing:normal;
   background:radial-gradient(115% 130% at 50% 42%,#f0e0ba 0%,#e6d2a2 46%,#cdb079 74%,#a9884e 100%);
   box-shadow:inset 0 0 90px rgba(90,55,15,.55),inset 0 0 24px rgba(60,35,10,.4),0 22px 60px rgba(0,0,0,.65);
   border:1px solid #7a5a2e}
 .parchment::before{content:"";position:absolute;inset:12px;border:2px dashed rgba(120,80,35,.5);border-radius:6px;pointer-events:none}
 .parchment .deco{position:absolute;opacity:.28;font-size:34px;pointer-events:none}
 .parchment .deco.tl{top:14px;left:18px}.parchment .deco.br{bottom:14px;right:18px}
-.q-badge{display:inline-flex;align-items:center;gap:8px;font-family:system-ui,sans-serif;font-weight:800;font-size:14px;
+.q-badge{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-text);font-weight:800;font-size:14px;
   color:#5a3a12;background:linear-gradient(180deg,#f3d98a,#d9a83f);border:1px solid #a9791f;border-radius:30px;
   padding:6px 16px;box-shadow:0 3px 10px rgba(0,0,0,.3);margin-bottom:14px}
 .q-num{font-size:clamp(15px,1.7vw,20px);font-weight:800;letter-spacing:2px;color:#6b4a1e;margin-bottom:10px}
 .q-text{font-size:clamp(26px,4vw,52px);font-weight:800;line-height:1.45;margin:6px 0 4px;text-shadow:0 1px 0 rgba(255,255,255,.25)}
 .q-seal{position:absolute;top:-18px;right:clamp(18px,4vw,44px);width:88px;height:88px;border-radius:50%;
   background:radial-gradient(circle at 40% 35%,#f6df95,#c9932f 70%,#8a5f16);border:3px solid #8a5f16;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;color:#4a3008;font-family:system-ui,sans-serif;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;color:#4a3008;font-family:var(--font-text);
   box-shadow:0 6px 16px rgba(0,0,0,.4);transform:rotate(-8deg)}
 .q-seal b{font-size:26px;line-height:1;font-weight:900}.q-seal span{font-size:11px;font-weight:800}
 .q-answer-label{font-size:clamp(18px,2.2vw,26px);color:#7a4a12;font-weight:800;margin:14px 0 6px;letter-spacing:4px}
 .q-answer{font-size:clamp(34px,6vw,74px);font-weight:900;color:#7a1f0f;line-height:1.3;
   text-shadow:0 2px 0 rgba(255,255,255,.3)}
-.q-note{margin:18px auto 0;max-width:90%;font-family:system-ui,sans-serif;font-size:clamp(13px,1.6vw,19px);font-weight:700;
+.q-note{margin:18px auto 0;max-width:90%;font-family:var(--font-text);font-size:clamp(13px,1.6vw,19px);font-weight:700;
   color:#4a3418;background:rgba(120,80,30,.14);border:1px solid rgba(120,80,30,.35);border-radius:12px;padding:12px 18px;line-height:1.7}
 .q-hidden{font-size:clamp(40px,9vw,110px);font-weight:900;color:rgba(90,60,25,.45);letter-spacing:14px;margin-top:6px}
 .quiz-intro-title{font-size:clamp(30px,6vw,74px);font-weight:900;line-height:1.3;
   color:#4a2c10;text-shadow:0 2px 0 rgba(255,255,255,.3)}
-.quiz-intro-sub{display:inline-block;font-family:system-ui,sans-serif;font-size:clamp(13px,1.7vw,20px);font-weight:800;
+.quiz-intro-sub{display:inline-block;font-family:var(--font-text);font-size:clamp(13px,1.7vw,20px);font-weight:800;
   color:#f0e0ba;background:linear-gradient(180deg,#5a3a18,#3a2410);border:1px solid #caa25a;border-radius:6px;padding:6px 22px;margin-bottom:18px}
 .quiz-intro-body{font-size:clamp(14px,1.7vw,21px);line-height:1.9;text-align:left;max-width:92%;margin:16px auto 0;font-weight:600}
 .quiz-emph{color:#7a1f0f;font-weight:900}
 @media(max-width:640px){.q-seal{width:66px;height:66px;top:-14px}.q-seal b{font-size:20px}.parchment::before{inset:8px}}
 
-/* ---------- チャレンジ種目ルーレット ---------- */
+/* ---------- チャレンジ種目ルーレット（黒ステージ上） ---------- */
 .roulette-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:500px;gap:16px}
-.roulette-title{font-size:clamp(22px,3vw,38px);font-weight:900;
-  background:linear-gradient(90deg,#ffd23f,#ff6b6b);-webkit-background-clip:text;background-clip:text;color:transparent}
+.roulette-title{font-family:var(--font-display);font-size:clamp(22px,3vw,38px);font-weight:600;line-height:1.1;letter-spacing:-.4px;color:var(--on-dark)}
 .wheel-wrap{position:relative;width:min(60vh,400px);aspect-ratio:1}
 .wheel-pointer{position:absolute;top:-4px;left:50%;transform:translateX(-50%);z-index:6;width:0;height:0;
-  border-left:19px solid transparent;border-right:19px solid transparent;border-top:34px solid #ffd23f;
+  border-left:17px solid transparent;border-right:17px solid transparent;border-top:30px solid #f5f5f7;
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
-.wheel{width:100%;height:100%;border-radius:50%;border:8px solid #ffd23f;position:relative;
-  box-shadow:0 0 40px rgba(255,210,63,.35),inset 0 0 34px rgba(0,0,0,.45)}
-.wheel-hub{position:absolute;top:50%;left:50%;width:54px;height:54px;border-radius:50%;transform:translate(-50%,-50%);
-  background:radial-gradient(circle at 40% 35%,#fff,#c9c9c9);border:4px solid #ffd23f;z-index:4}
-.roulette-result{font-size:clamp(24px,4.5vw,54px);font-weight:900;color:var(--accent);min-height:58px;display:flex;align-items:center}
+.wheel{width:100%;height:100%;border-radius:50%;border:6px solid rgba(255,255,255,.9);position:relative;
+  box-shadow:inset 0 0 30px rgba(0,0,0,.35)}
+.wheel-hub{position:absolute;top:50%;left:50%;width:52px;height:52px;border-radius:50%;transform:translate(-50%,-50%);
+  background:#f5f5f7;border:4px solid rgba(0,0,0,.15);z-index:4}
+.roulette-result{font-family:var(--font-display);font-size:clamp(24px,4.5vw,54px);font-weight:600;letter-spacing:-.5px;color:var(--accent-dark);min-height:58px;display:flex;align-items:center}
 .roulette-legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:92%}
-.rl-item{display:flex;align-items:center;gap:7px;font-size:clamp(12px,1.5vw,16px);font-weight:800;
-  background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:22px;padding:5px 14px;color:var(--muted)}
-.rl-item.win{background:rgba(255,210,63,.22);border-color:var(--accent);color:#fff;box-shadow:0 0 16px rgba(255,210,63,.3)}
-.rl-sw{width:13px;height:13px;border-radius:4px;flex:none}
+.rl-item{display:flex;align-items:center;gap:7px;font-size:clamp(12px,1.5vw,15px);font-weight:400;
+  background:rgba(255,255,255,.08);border-radius:980px;padding:6px 15px;color:var(--on-dark-muted);letter-spacing:normal}
+.rl-item.win{background:rgba(41,151,255,.22);box-shadow:0 0 0 1.5px var(--accent-dark);color:#fff;font-weight:600}
+.rl-sw{width:12px;height:12px;border-radius:50%;flex:none}
 
 /* 投影URL入力欄 */
-.urlin{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:9px;border-radius:8px;font-size:12px}
-.footer{grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;padding:6px}
+.urlin{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);color:var(--text);padding:9px;border-radius:10px;font-size:12px;letter-spacing:normal}
+.urlin:focus{outline:none;box-shadow:var(--focus-ring);border-color:var(--accent)}
+
+/* 投影モード退出ボタン（投影中のみ・目立たないよう低不透明度） */
+#presentExit{position:fixed;top:14px;left:14px;z-index:10000;display:flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.12);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  color:rgba(255,255,255,.85);border-radius:980px;padding:7px 16px;font-size:12px;letter-spacing:normal;
+  opacity:.2;transition:opacity .25s}
+#presentExit:hover{opacity:1}
 
 /* ---------- スマホ・タブレット対応 ---------- */
 @media(max-width:640px){
-  .topbar{flex-wrap:wrap;gap:8px;padding:10px 12px;position:static}
-  .topbar h1{font-size:16px}
+  .topbar{flex-wrap:wrap;gap:8px;padding:8px 14px;position:static}
+  .topbar h1{font-size:15px}
   .topbar h1 .sub{display:none}
   .spacer{display:none}
-  .total-pill{font-size:12px;padding:6px 10px}
+  .total-pill{font-size:11px;padding:4px 10px}
   #btnPresent{display:none} /* 別ウィンドウ投影はスマホ非対応環境が多いため隠す */
-  .tbtn{padding:8px 12px;font-size:13px}
+  .tbtn{padding:6px 12px;font-size:12px}
   .wrap{padding:10px;gap:12px}
   .stage{min-height:46vh;padding:14px}
   .stage-label{font-size:10px;top:10px;right:12px}
   .panel{max-height:none;padding:14px}
   .tabs{position:sticky;top:0;z-index:10}
-  .tab{font-size:12px;padding:12px 3px}
+  .tab{font-size:11px;padding:12px 2px}
   .rankrow{gap:8px;padding:10px 12px;margin-bottom:9px}
   .rankrow .rank,.rankrow .medal{width:38px}
   .rankrow .tname{width:auto;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -289,8 +318,8 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
   .rankrow .barwrap{display:none} /* 狭い画面ではバー省略・数字を大きく */
   .rankrow .score{width:auto;min-width:52px}
   .board-title{font-size:24px}
-  .pbtn{padding:9px 12px;font-size:14px} /* タップしやすく */
-  .scene-btn{min-width:60px;font-size:12px;padding:11px 4px}
+  .pbtn{padding:9px 14px;font-size:14px} /* タップしやすく */
+  .scene-btn{min-width:60px;font-size:12px;padding:10px 4px}
   .podium{gap:10px}
   .pod .pblock{width:clamp(72px,26vw,120px)}
 }
@@ -303,11 +332,13 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
 </head>
 <body>
 <canvas id="confetti"></canvas>
+<button id="presentExit" style="display:none">✕ 投影モードを終了（Esc）</button>
 
 <div class="topbar">
   <h1>🏆 合宿レク <span class="sub">イベント進行＆得点管理</span></h1>
   <div class="spacer"></div>
   <span class="total-pill" id="totalPill">合計 0 / 1750pt</span>
+  <button class="tbtn" id="btnPresentMode">📺 投影モード</button>
   <button class="tbtn" id="btnPresent">🖥 投影ウィンドウ</button>
   <button class="tbtn" id="btnFull">⛶ 全画面</button>
 </div>
@@ -340,7 +371,7 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
 /* ================================================================
    DATA — PDFの内容をそのまま初期値に
    ================================================================ */
-const TEAM_COLORS = ['#ff6b6b','#4da3ff','#33d69f','#ffa53d','#c084fc'];
+const TEAM_COLORS = ['#ff453a','#0a84ff','#30d158','#ff9f0a','#bf5af2']; // Apple システムカラー（黒ステージ映え）
 const DEFAULT_TEAMS = [
   {name:'チーム飲兵衛', members:['澤井','和田','清水','津村','ともくん']},
   {name:'チームMBTI絶対I型', members:['土屋','津久井','むすびちゃん','佐藤（圭）','斉藤']},
@@ -398,8 +429,25 @@ const MAX_TOTAL = 300; // 1チーム最大（クイズ100 + イラスト150 + �
    ================================================================ */
 const KEY='rectool.state.v4';
 const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('rectool') : null;
-// 投影モード判定：URLに #present（推奨・Artifactでも動作）または ?view=present
-const isPresent = location.hash.replace(/^#/,'')==='present' || new URLSearchParams(location.search).get('view')==='present';
+// 投影モード判定：①「📺 投影モード」ボタン（タブ単位・claude.ai版でも確実）
+// ②URLに #present（ローカルindex.html向け） ③?view=present
+function detectPresent(){
+  try{if(sessionStorage.getItem('rectool.present')==='1')return true;}catch(e){}
+  return location.hash.replace(/^#/,'')==='present' || new URLSearchParams(location.search).get('view')==='present';
+}
+let isPresent = detectPresent();
+function applyPresent(){
+  isPresent=detectPresent();
+  document.body.classList.toggle('present',isPresent);
+  const x=document.getElementById('presentExit'); if(x)x.style.display=isPresent?'flex':'none';
+  renderAll();
+}
+function enterPresent(){try{sessionStorage.setItem('rectool.present','1');}catch(e){} applyPresent();}
+function exitPresent(){
+  try{sessionStorage.removeItem('rectool.present');}catch(e){}
+  if(location.hash.replace(/^#/,'')==='present'){try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}
+  applyPresent();
+}
 function baseURL(){return location.href.split('#')[0];}
 function presentURL(){return baseURL()+'#present';}
 
@@ -435,6 +483,7 @@ function load(){
     if(!s.quiz)s.quiz={view:'intro',index:0,revealed:false};
     if(!s.roulette)s.roulette={spinId:0,resultIndex:null,revealed:false};
     if(s.prizesVersion!==PRIZES_VERSION){s.prizes=defaultPrizes();s.prizesVersion=PRIZES_VERSION;} // 景品を最新16品へ更新
+    s.teams.forEach(t=>{if(TEAM_COLORS[t.id-1])t.color=TEAM_COLORS[t.id-1];}); // チーム色を現行パレットに同期
     return s;
   }}catch(e){}
   return freshState();
@@ -480,7 +529,7 @@ let parts=[],raf=null;
 function sizeCvs(){cvs.width=innerWidth;cvs.height=innerHeight;}
 addEventListener('resize',sizeCvs);sizeCvs();
 function confetti(n=140){
-  const cols=['#ffd23f','#ff6b6b','#4da3ff','#33d69f','#c084fc','#ff9d3d','#fff'];
+  const cols=['#0a84ff','#2997ff','#30d158','#ff9f0a','#ff453a','#bf5af2','#f5f5f7'];
   for(let i=0;i<n;i++)parts.push({
     x:Math.random()*cvs.width,y:-20-Math.random()*cvs.height*.3,
     vx:(Math.random()-.5)*6,vy:2+Math.random()*5,
@@ -571,7 +620,7 @@ function renderScoreboard(){
       <div class="${medal?'medal':'rank'}">${medal||(i+1)}</div>
       <div class="tname">${t.name}<div class="tmembers">${t.members.length}名</div></div>
       <div class="barwrap"><div class="bar" style="width:${pct}%;background:linear-gradient(90deg,${t.color},${t.color}cc)"></div></div>
-      <div class="score" style="color:${i===0?'var(--accent)':'#fff'}">${t.score}</div>
+      <div class="score" style="color:${i===0?'var(--accent-dark)':'var(--on-dark)'}">${t.score}</div>
     </div>`;
   });
   stageBody.innerHTML=h;
@@ -586,7 +635,7 @@ function renderResultStage(){
   top3.forEach((t,i)=>{ if(!t)return;
     h+=`<div class="pod ${cls[i]}"><div class="pcap">${caps[i]}</div>
       <div class="pname">${t.name}</div><div class="pscore">${t.score}pt</div>
-      <div class="pblock" style="background:linear-gradient(180deg,${t.color},${t.color}99)">${order[i]}</div></div>`;
+      <div class="pblock" style="background:${t.color}">${order[i]}</div></div>`;
   });
   h+='</div>';
   if(s[3]||s[4]){h+='<div style="text-align:center;color:var(--muted);font-size:15px;margin-bottom:8px">';
@@ -634,7 +683,7 @@ function renderQuizStage(){
 }
 
 /* ---- Roulette stage（チャレンジ種目ルーレット） ---- */
-const ROULETTE_COLORS=['#ff6b6b','#4da3ff','#33d69f','#ffa53d','#c084fc'];
+const ROULETTE_COLORS=['#ff453a','#0a84ff','#30d158','#ff9f0a','#bf5af2'];
 let lastRouletteShown=0;
 function renderRouletteStage(){
   const r=state.roulette||{spinId:0,resultIndex:null,revealed:false};
@@ -730,8 +779,9 @@ function renderGachaStage(){
   const g=state.gacha;
   const pool=gachaPool();
   const names=pool.length?pool.map(p=>p.name):['景品を登録してください'];
-  let resultHtml=g.result?`<div class="gacha-result">🎉 ${g.result} 🎉</div>`:'<div class="gacha-result"></div>';
-  let winner=g.winnerTeamId?`<div class="gacha-win-team">当選チーム：${team(g.winnerTeamId)?.name||''}</div>`:'';
+  const isNewSpin=g.spinId>lastSpinShown; // 回転中は結果テキストを伏せる
+  let resultHtml=(g.result&&!isNewSpin)?`<div class="gacha-result">🎉 ${g.result} 🎉</div>`:'<div class="gacha-result"></div>';
+  let winner=(g.winnerTeamId&&!isNewSpin)?`<div class="gacha-win-team">当選チーム：${team(g.winnerTeamId)?.name||''}</div>`:'';
   stageBody.innerHTML=`<div class="gacha-stage">
     <div class="gacha-title">🎁 景品ガチャ 🎁</div>
     <div class="reel"><div class="reel-track" id="reelTrack"></div></div>
@@ -745,7 +795,7 @@ function renderGachaStage(){
   reel.push(finalName);
   track.innerHTML=reel.map(n=>`<div class="reel-item">${n}</div>`).join('');
   // animate only when a new spin arrived
-  if(g.spinId>lastSpinShown){
+  if(isNewSpin){
     lastSpinShown=g.spinId;
     const H=150,total=reel.length;
     track.style.transition='none';
@@ -754,7 +804,12 @@ function renderGachaStage(){
     if(!isPresent)SFX.drum();
     track.style.transition='transform 3.4s cubic-bezier(.15,.85,.2,1)';
     track.style.transform=`translateY(-${(total-1)*H}px)`;
-    setTimeout(()=>{ if(!isPresent){SFX.win();} confetti(180); },3300);
+    const shownSpin=g.spinId;
+    setTimeout(()=>{
+      if(!isPresent){SFX.win();} confetti(180);
+      // 回転終了後に結果テキストと当選チームを表示
+      if(state.scene==='gacha'&&state.gacha.spinId===shownSpin)renderGachaStage();
+    },3350);
   }else{
     // static: show final at rest
     track.style.transition='none';
@@ -1038,15 +1093,15 @@ function renderInfoPanel(){
     ['21:35-21:55','チャレンジゲーム 5種目','1人1種の5競技'],
     ['21:55-22:00','総合結果・景品発表','表彰・写真撮影'],
   ];
-  panel.innerHTML=`<h3>🖥 投影用URL / 操作用URL</h3>
-  <div id="urlBox" style="border:1px solid var(--accent);border-radius:12px;padding:13px;margin-bottom:18px;background:rgba(255,210,63,.06)">
-    <div class="hint" style="margin-bottom:10px">同じPCで下の2つを<b>別タブ（別ウィンドウ）</b>で開き、<b>投影用</b>をモニターへ移すとリアルタイムで同期します。（「投影画面を開く」が反応しない場合はこのURLをコピーして新しいタブで開いてください）</div>
-    <label class="mini" style="font-weight:800">🎮 操作用（この画面）</label>
+  panel.innerHTML=`<h3>🖥 投影のセットアップ</h3>
+  <div id="urlBox" style="border:1px solid var(--accent);border-radius:12px;padding:13px;margin-bottom:18px;background:rgba(0,113,227,.05)">
+    <div class="hint" style="margin-bottom:10px"><b>手順（いちばん確実）</b>：① このページを<b>もう1つのタブ（別ウィンドウ）</b>で開く → ② そのタブで右上の<b>「📺 投影モード」</b>を押す → ③ そのウィンドウをモニターへ移して全画面（このタブの操作がリアルタイムで反映されます／投影側は Esc で戻れます）</div>
+    <label class="mini" style="font-weight:600">🔗 このページのURL（もう1つのタブで開く用）</label>
     <div style="display:flex;gap:6px;margin:4px 0 10px"><input class="urlin" id="urlAdmin" readonly value="${baseURL()}"><button class="pbtn" data-copy="admin">コピー</button></div>
-    <label class="mini" style="font-weight:800">📺 投影用（#present）</label>
+    <label class="mini" style="font-weight:600">📺 投影用URL（ダウンロード版 index.html 向け・開くと直接投影モード）</label>
     <div style="display:flex;gap:6px;margin:4px 0"><input class="urlin" id="urlPresent" readonly value="${presentURL()}"><button class="pbtn" data-copy="present">コピー</button></div>
-    <a class="ghostbtn" style="display:block;text-align:center;margin-top:10px" href="${presentURL()}" target="_blank" rel="noopener">📺 投影画面を新しいタブで開く</a>
-    <div class="mini" style="margin-top:8px">※ スマホ等の別デバイスで開いた場合は同期しません（同一ブラウザ内でのみ同期）。当日の本番はダウンロードした index.html を2つのウィンドウで開くのが最も確実です。</div>
+    <a class="ghostbtn" style="display:block;text-align:center;margin-top:10px" href="${baseURL()}" target="_blank" rel="noopener">🔗 このページを新しいタブで開く</a>
+    <div class="mini" style="margin-top:8px">※ 同期は同一ブラウザ内のみ（スマホ等の別デバイスとは同期しません）。claude.ai版では「投影ウィンドウ」ボタンや#付きURLが効かないため、上の手順①②をご利用ください。</div>
   </div>
   <h3>📋 進行・設定</h3>
   <div class="hint">当日の進行表（90分想定）。下部でチーム名の編集・スコアのリセットができます。</div>
@@ -1055,9 +1110,9 @@ function renderInfoPanel(){
   </div>
   <h3>配点ルール</h3>
   <div style="font-size:13px;color:var(--muted);line-height:1.9;margin-bottom:16px">
-   ・クイズ20問：正解 <b style="color:#fff">5</b>（記述式・最大100）<br>
-   ・イラスト15問：正解 <b style="color:#fff">10</b> / 近似 <b style="color:#fff">5</b> / 面白さ賞 <b style="color:#fff">5</b>（最大150）<br>
-   ・チャレンジ5種目：順位制 <b style="color:#fff">10/8/6/4/2</b>（最大50）<br>
+   ・クイズ20問：正解 <b style="color:#1d1d1f">5</b>（記述式・最大100）<br>
+   ・イラスト15問：正解 <b style="color:#1d1d1f">10</b> / 近似 <b style="color:#1d1d1f">5</b> / 面白さ賞 <b style="color:#1d1d1f">5</b>（最大150）<br>
+   ・チャレンジ5種目：順位制 <b style="color:#1d1d1f">10/8/6/4/2</b>（最大50）<br>
    ・合計 最大 <b style="color:var(--accent)">300</b>pt / チーム
   </div>
   <h3>🎪 ゲームマスター（主催者）</h3>
@@ -1101,6 +1156,9 @@ function renderInfoPanel(){
 /* ================================================================
    TOP BUTTONS
    ================================================================ */
+document.getElementById('btnPresentMode').onclick=()=>{
+  if(confirm('このタブを投影モードに切り替えます。\n（操作は別タブで同じページを開いて行ってください。Escキーで戻れます）')){enterPresent();}
+};
 document.getElementById('btnPresent').onclick=()=>{
   let w=null; try{w=window.open(presentURL(),'rectool_present','width=1280,height=800');}catch(e){}
   if(!w){ // ポップアップが開けない環境（claude.ai上のArtifact等）→ URL案内へ誘導
@@ -1114,6 +1172,7 @@ document.getElementById('btnFull').onclick=()=>{
   const el=document.getElementById('stage');
   if(!document.fullscreenElement)el.requestFullscreen?.();else document.exitFullscreen?.();
 };
+document.getElementById('presentExit').onclick=exitPresent;
 
 /* ================================================================
    MASTER RENDER
@@ -1125,16 +1184,15 @@ function renderAll(){
   if(!isPresent)renderPanel();
 }
 
-/* present mode setup */
-if(isPresent){
-  document.body.classList.add('present');
-  // present window auto-runs timer/gacha animations via renderStage
-}
+/* present mode setup（body class・退出ボタン表示は applyPresent が一括管理） */
+isPresent=detectPresent();
+document.body.classList.toggle('present',isPresent);
+const _px=document.getElementById('presentExit'); if(_px)_px.style.display=isPresent?'flex':'none';
 
 // unlock audio on first interaction
 addEventListener('pointerdown',()=>{AC()&&AC().resume&&AC().resume();},{once:true});
 addEventListener('keydown',e=>{
-  if(isPresent)return;
+  if(isPresent){ if(e.key==='Escape')exitPresent(); return; }
   const tag=(e.target.tagName||'').toLowerCase();if(tag==='input'||tag==='select'||tag==='textarea')return;
   if(e.key==='ArrowRight'&&curTab==='topic'){document.getElementById('tNext')?.click();}
   if(e.key==='ArrowLeft'&&curTab==='topic'){document.getElementById('tPrev')?.click();}
