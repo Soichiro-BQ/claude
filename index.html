@@ -433,6 +433,8 @@ const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('rectool') : nu
 // ②URLに #present（ローカルindex.html向け） ③?view=present
 function detectPresent(){
   try{if(sessionStorage.getItem('rectool.present')==='1')return true;}catch(e){}
+  // 「投影ウィンドウ」で開いた窓はウィンドウ名で判定（リダイレクトでURLハッシュが落ちても有効）
+  try{if(window.name==='rectool_present')return true;}catch(e){}
   return location.hash.replace(/^#/,'')==='present' || new URLSearchParams(location.search).get('view')==='present';
 }
 let isPresent = detectPresent();
@@ -445,6 +447,7 @@ function applyPresent(){
 function enterPresent(){try{sessionStorage.setItem('rectool.present','1');}catch(e){} applyPresent();}
 function exitPresent(){
   try{sessionStorage.removeItem('rectool.present');}catch(e){}
+  try{if(window.name==='rectool_present')window.name='';}catch(e){}
   if(location.hash.replace(/^#/,'')==='present'){try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}}
   applyPresent();
 }
