@@ -337,6 +337,7 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
 <div class="topbar">
   <h1>🏆 合宿レク <span class="sub">イベント進行＆得点管理</span></h1>
   <div class="spacer"></div>
+  <span class="total-pill" id="netStatus" style="display:none;border-color:rgba(48,209,88,.6);color:#7ee2a0">🌐 別PC同期 ON</span>
   <span class="total-pill" id="totalPill">合計 0 / 1750pt</span>
   <button class="tbtn" id="btnPresentMode">📺 投影モード</button>
   <button class="tbtn" id="btnPresent">🖥 投影ウィンドウ</button>
@@ -480,24 +481,73 @@ function defaultPrizes(){
   ].map((name,i)=>({id:'p'+(i+1),name,qty:1}));
 }
 let state = load();
+function migrateState(s){
+  if(!s.gameMaster)s.gameMaster={name:'藤沼',title:'ゲームマスター',photo:null};
+  if(!s.quiz)s.quiz={view:'intro',index:0,revealed:false};
+  if(!s.roulette)s.roulette={spinId:0,resultIndex:null,revealed:false};
+  if(s.prizesVersion!==PRIZES_VERSION){s.prizes=defaultPrizes();s.prizesVersion=PRIZES_VERSION;} // 景品を最新16品へ更新
+  s.teams.forEach(t=>{if(TEAM_COLORS[t.id-1])t.color=TEAM_COLORS[t.id-1];}); // チーム色を現行パレットに同期
+  return s;
+}
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.teams){
-    if(!s.gameMaster)s.gameMaster={name:'藤沼',title:'ゲームマスター',photo:null};
-    if(!s.quiz)s.quiz={view:'intro',index:0,revealed:false};
-    if(!s.roulette)s.roulette={spinId:0,resultIndex:null,revealed:false};
-    if(s.prizesVersion!==PRIZES_VERSION){s.prizes=defaultPrizes();s.prizesVersion=PRIZES_VERSION;} // 景品を最新16品へ更新
-    s.teams.forEach(t=>{if(TEAM_COLORS[t.id-1])t.color=TEAM_COLORS[t.id-1];}); // チーム色を現行パレットに同期
-    return s;
-  }}catch(e){}
+  try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.teams)return migrateState(s);}catch(e){}
   return freshState();
 }
 function save(broadcast=true){
   localStorage.setItem(KEY, JSON.stringify(state));
   if(broadcast && bc) bc.postMessage({t:'sync'});
+  netPush();
 }
 // 他ウィンドウからの同期
 if(bc) bc.onmessage=(e)=>{ if(e.data&&e.data.t==='sync'){ state=load(); renderAll(); } };
 window.addEventListener('storage',(e)=>{ if(e.key===KEY){ state=load(); renderAll(); }});
+
+/* ================================================================
+   ネットワーク同期（別PCから投影する場合）
+   同梱の serve.py を操作PCで起動すると /api/state が生え、自動で有効化。
+   同じWi-Fi上の別PCが http://<操作PCのIP>:8765 を開くとリアルタイム同期。
+   claude.ai版やファイル直開きでは /api/state が無いため自動的に無効（無害）。
+   ================================================================ */
+let netSync=false,netVersion=0,netApplying=false,netLan='';
+function netPush(){
+  if(!netSync||netApplying)return;
+  fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state})})
+    .then(r=>r.json()).then(j=>{if(j&&typeof j.version==='number')netVersion=j.version;}).catch(()=>{});
+}
+function netApply(j){
+  netVersion=j.version;
+  if(!j.state)return;
+  netApplying=true;
+  try{
+    state=migrateState(j.state);
+    localStorage.setItem(KEY,JSON.stringify(state));
+    if(bc)bc.postMessage({t:'sync'});
+    renderAll();
+  }finally{netApplying=false;}
+}
+async function netPoll(){ // ロングポーリング：変更があれば即時（最大25秒待機）で反映
+  while(netSync){
+    try{
+      const r=await fetch('/api/state?since='+netVersion+'&wait=25',{cache:'no-store'});
+      if(!r.ok)throw 0;
+      const j=await r.json();
+      if(j.lan)netLan=j.lan;
+      if(j.version>netVersion)netApply(j);
+    }catch(e){await new Promise(res=>setTimeout(res,2000));}
+  }
+}
+async function netInit(){
+  try{
+    const r=await fetch('/api/state?since=-1',{cache:'no-store'});
+    if(!r.ok)return;
+    const j=await r.json();
+    netSync=true; if(j.lan)netLan=j.lan;
+    if(j.state&&j.version>0){netApply(j);}else{netVersion=j.version||0;netPush();}
+    const ns=document.getElementById('netStatus'); if(ns)ns.style.display='inline-flex';
+    if(!isPresent&&curTab==='info')renderPanel();
+    netPoll();
+  }catch(e){}
+}
 
 /* ================================================================
    SOUND (WebAudio, 外部ファイル不要)
@@ -1124,7 +1174,24 @@ function renderInfoPanel(){
     <label class="mini" style="font-weight:600">📺 投影用URL（ダウンロード版 index.html 向け・開くと直接投影モード）</label>
     <div style="display:flex;gap:6px;margin:4px 0"><input class="urlin" id="urlPresent" readonly value="${presentURL()}"><button class="pbtn" data-copy="present">コピー</button></div>
     <a class="ghostbtn" style="display:block;text-align:center;margin-top:10px" href="${baseURL()}" target="_blank" rel="noopener">🔗 このページを新しいタブで開く</a>
-    <div class="mini" style="margin-top:8px">※ 同期は同一ブラウザ内のみ（スマホ等の別デバイスとは同期しません）。claude.ai版では「投影ウィンドウ」ボタンや#付きURLが効かないため、上の手順①②をご利用ください。</div>
+    <div class="mini" style="margin-top:8px">※ この方法の同期は同一ブラウザ内のみ。<b>別のPCから投影する場合</b>は、下の「🌐 別PCから投影」を使ってください。</div>
+  </div>
+  <h3>🌐 別PCから投影（LANサーバー同期）</h3>
+  <div style="border:1px solid ${netSync?'rgba(48,209,88,.6)':'var(--line)'};border-radius:12px;padding:13px;margin-bottom:18px;background:${netSync?'rgba(48,209,88,.06)':'var(--panel)'}">
+    ${netSync?`
+      <div style="font-size:14px;font-weight:600;color:#1d7a35;margin-bottom:8px">✅ 同期サーバーに接続中 — 別PCとリアルタイム同期しています</div>
+      ${netLan?`<label class="mini" style="font-weight:600">📺 投影PCで開くURL（同じWi-Fiに接続して開く → 自動で投影モード）</label>
+      <div style="display:flex;gap:6px;margin:4px 0"><input class="urlin" id="urlLan" readonly value="${netLan}/#present"><button class="pbtn" data-copy="lan">コピー</button></div>`:''}
+    `:`
+      <div class="hint" style="margin-bottom:8px">操作PCと投影PCが<b>別のマシン</b>の場合は、同梱の同期サーバーを使います（会場のWi-Fiだけで動作・インターネット不要）。</div>
+      <div style="font-size:13px;line-height:1.8;letter-spacing:normal">
+        ① リポジトリ一式（index.html / serve.py 等）を操作PCにダウンロード<br>
+        ② 操作PCで <b>start-server.command</b>（Mac）／<b>start-server.bat</b>（Windows）をダブルクリック<br>
+        ③ 画面に表示された <b>http://（操作PCのIP）:8765</b> を操作PCのブラウザで開いて操作<br>
+        ④ 投影PCを<b>同じWi-Fi</b>につなぎ、表示された「投影PC用URL」を開く（自動で投影モード）
+      </div>
+      <div class="mini" style="margin-top:8px">※ claude.aiのURLはサーバーを持たないため別PC同期はできません。この方式なら操作の全て（得点・クイズ・ルーレット・ガチャ）が投影PCへ即時反映されます。</div>
+    `}
   </div>
   <h3>📋 進行・設定</h3>
   <div class="hint">当日の進行表（90分想定）。下部でチーム名の編集・スコアのリセットができます。</div>
@@ -1160,7 +1227,7 @@ function renderInfoPanel(){
   <button class="ghostbtn dangerbtn" id="resetScores">🔄 イベント前リセット（得点・ガチャ・進行を初期化）</button>
   <button class="ghostbtn dangerbtn" id="resetAll">⚠ 全データを初期化</button>`;
   panel.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{
-    const inp=document.getElementById(b.dataset.copy==='present'?'urlPresent':'urlAdmin');
+    const inp=document.getElementById({present:'urlPresent',admin:'urlAdmin',lan:'urlLan'}[b.dataset.copy]||'urlAdmin');
     inp.focus();inp.select();
     let ok=false;try{ok=document.execCommand('copy');}catch(e){}
     if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(inp.value).catch(()=>{});}
@@ -1226,6 +1293,7 @@ addEventListener('keydown',e=>{
 });
 
 renderAll();
+netInit(); // serve.py 起動時のみ別PC同期が有効化される（それ以外は静かに無効）
 </script>
 </body>
 </html>
