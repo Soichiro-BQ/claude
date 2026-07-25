@@ -192,6 +192,21 @@ body.present .topbar,body.present .dock{display:none}
 body.present .wrap{grid-template-columns:1fr;padding:0;max-width:none}
 body.present .stage{min-height:100vh;border:none;border-radius:0}
 canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
+
+/* ---------- ゲームマスター（主催者） ---------- */
+.host-avatar{border-radius:50%;overflow:hidden;border:3px solid var(--accent);background:var(--panel2);
+  display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.host-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.host-badge{position:absolute;left:18px;bottom:16px;display:flex;align-items:center;gap:11px;z-index:3;
+  background:rgba(0,0,0,.4);padding:7px 18px 7px 7px;border-radius:44px;border:1px solid var(--line);backdrop-filter:blur(4px)}
+.host-badge .hb-txt{font-size:15px;font-weight:800;line-height:1.2}
+.host-badge .hb-sub{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:1px}
+.host-result{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:8px}
+.host-bubble{background:rgba(255,210,63,.12);border:1px solid rgba(255,210,63,.4);border-radius:16px;
+  padding:10px 20px;font-size:clamp(14px,1.6vw,20px);font-weight:700;max-width:80%;text-align:center}
+.host-name{font-size:clamp(14px,1.6vw,20px);font-weight:800}
+.host-name .hn-sub{color:var(--muted);font-size:12px;font-weight:700;margin-left:6px}
+@media(max-width:640px){.host-badge{left:10px;bottom:10px;padding:5px 12px 5px 5px}.host-badge .hb-txt{font-size:13px}}
 .footer{grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;padding:6px}
 
 /* ---------- スマホ・タブレット対応 ---------- */
@@ -244,6 +259,7 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
   <div class="stage" id="stage">
     <div class="stage-label" id="stageLabel">SCOREBOARD</div>
     <div id="stageBody"></div>
+    <div class="host-badge" id="hostBadge" style="display:none"></div>
   </div>
 
   <!-- ============ DOCK ============ -->
@@ -267,11 +283,11 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
    ================================================================ */
 const TEAM_COLORS = ['#ff6b6b','#4da3ff','#33d69f','#ffa53d','#c084fc'];
 const DEFAULT_TEAMS = [
-  {name:'チーム①', members:['澤井','和田','清水','津村','ともくん']},
-  {name:'チーム②', members:['土屋','津久井','むすびちゃん','佐藤（圭）','斉藤']},
-  {name:'チーム③', members:['山﨑先生','みりちゃん','榎本','渡邊（真）']},
-  {name:'チーム④', members:['みちるちゃん','鍵谷','御船','矢口','倉田']},
-  {name:'チーム⑤', members:['渡邉（達）','伊藤','野尻','佐藤（早）']},
+  {name:'チーム飲兵衛', members:['澤井','和田','清水','津村','ともくん']},
+  {name:'チームMBTI絶対I型', members:['土屋','津久井','むすびちゃん','佐藤（圭）','斉藤']},
+  {name:'チーム親戚', members:['山﨑先生','みりちゃん','榎本','渡邊（真）']},
+  {name:'チームみちるちるず', members:['みちるちゃん','鍵谷','御船','矢口','倉田']},
+  {name:'チーム職人気質', members:['渡邉（達）','伊藤','野尻','佐藤（早）']},
 ];
 // テーマイラスト当て お題（PDFの3セット＝15問）
 const TOPICS = [
@@ -280,14 +296,14 @@ const TOPICS = [
   {set:'セット③ 社内のあの人', items:['藤沼','中野さん','野尻さん','達生さん','澤井さん']},
 ];
 // チャレンジゲーム 5競技
-const CHALLENGES = ['腕相撲','片足立ち','だるまさんが転んだ','10秒ストップ','牛乳早飲み'];
+const CHALLENGES = ['腕相撲','片足立ち','だるまさんが転んだ','10秒ストップ','早飲み対決'];
 const RANK_POINTS = [10,8,6,4,2]; // 1位〜5位
 const MAX_TOTAL = 350; // 1チーム最大
 
 /* ================================================================
    STATE
    ================================================================ */
-const KEY='rectool.state.v3';
+const KEY='rectool.state.v4';
 const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('rectool') : null;
 const isPresent = new URLSearchParams(location.search).get('view')==='present';
 
@@ -305,11 +321,12 @@ function freshState(){
       {id:'p3',name:'ドリンクチケット',qty:3},
       {id:'p4',name:'ハズレなしステッカー',qty:5},
     ],
+    gameMaster: {name:'藤沼', title:'ゲームマスター', photo:null},
   };
 }
 let state = load();
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.teams) return s;}catch(e){}
+  try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.teams){ if(!s.gameMaster)s.gameMaster={name:'藤沼',title:'ゲームマスター',photo:null}; return s; }}catch(e){}
   return freshState();
 }
 function save(broadcast=true){
@@ -401,9 +418,24 @@ function sortedTeams(){return [...state.teams].sort((a,b)=>b.score-a.score);}
 const stageBody=document.getElementById('stageBody');
 const stageLabel=document.getElementById('stageLabel');
 
+function gm(){return state.gameMaster||{name:'藤沼',title:'ゲームマスター',photo:null};}
+function hostAvatar(px){
+  const g=gm();
+  const inner=g.photo?`<img src="${g.photo}" alt="">`:`<span style="font-size:${Math.round(px*0.52)}px">🍉</span>`;
+  return `<div class="host-avatar" style="width:${px}px;height:${px}px">${inner}</div>`;
+}
+function renderHostBadge(sc){
+  const hb=document.getElementById('hostBadge');if(!hb)return;
+  if(sc==='scoreboard'){
+    const g=gm();
+    hb.innerHTML=hostAvatar(46)+`<div><div class="hb-txt">${g.name}</div><div class="hb-sub">${g.title||'ゲームマスター'}</div></div>`;
+    hb.style.display='flex';
+  }else{hb.style.display='none';}
+}
 function renderStage(){
   const sc=state.scene;
   if(sc!=='timer')stopTimerRaf(); // 他シーンへ移ったらタイマー描画ループを止める
+  renderHostBadge(sc);
   stageLabel.textContent=({scoreboard:'SCOREBOARD',timer:'TIMER',topic:'ILLUST QUIZ',gacha:'PRIZE GACHA',result:'FINAL RESULT'})[sc]||'';
   if(sc==='scoreboard'){renderScoreboard();}
   else if(sc==='timer'){renderTimerStage();}
@@ -444,8 +476,12 @@ function renderResultStage(){
       <div class="pblock" style="background:linear-gradient(180deg,${t.color},${t.color}99)">${order[i]}</div></div>`;
   });
   h+='</div>';
-  if(s[3]||s[4]){h+='<div style="text-align:center;color:var(--muted);font-size:15px">';
+  if(s[3]||s[4]){h+='<div style="text-align:center;color:var(--muted);font-size:15px;margin-bottom:8px">';
     s.slice(3).forEach((t,i)=>{h+=`<span class="chip">${i+4}位　${t.name}　${t.score}pt</span>`;});h+='</div>';}
+  const g=gm(),champ=s[0];
+  h+=`<div class="host-result">${hostAvatar(84)}
+    <div class="host-name">${g.name}<span class="hn-sub">${g.title||'ゲームマスター'}</span></div>
+    <div class="host-bubble">🎤「${champ?champ.name+'、優勝おめでとう！':'みんな'}　今日はお疲れさまでした！」</div></div>`;
   stageBody.innerHTML=h;
 }
 
@@ -729,6 +765,27 @@ function spinGacha(){
   state.scene='gacha';save();renderAll();
 }
 
+/* ---- ゲームマスター写真の登録（端末内で縮小してdataURL保存） ---- */
+function setHostPhoto(file){
+  const reader=new FileReader();
+  reader.onload=(ev)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=440;
+      const scale=Math.min(1,MAX/Math.max(img.width,img.height));
+      const w=Math.round(img.width*scale),h=Math.round(img.height*scale);
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      let data;try{data=c.toDataURL('image/jpeg',0.82);}catch(e){data=ev.target.result;}
+      state.gameMaster=gm();state.gameMaster.photo=data;
+      save();if(!isPresent){SFX.ding();confetti(60);}renderAll();
+    };
+    img.onerror=()=>alert('画像の読み込みに失敗しました。別の画像でお試しください。');
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 /* ---- Info panel ---- */
 function renderInfoPanel(){
   const tt=[
@@ -750,7 +807,20 @@ function renderInfoPanel(){
    ・チャレンジ5種目：順位制 <b style="color:#fff">10/8/6/4/2</b>（最大50）<br>
    ・合計 最大 <b style="color:var(--accent)">350</b>pt / チーム
   </div>
-  <h3>チーム名の編集</h3>
+  <h3>🎪 ゲームマスター（主催者）</h3>
+  <div class="hint">写真を登録すると、スコアボード左下と結果発表画面に主催者として表示されます。（写真はこの端末内にのみ保存されます）</div>
+  <div style="display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px">
+    ${hostAvatar(72)}
+    <div style="flex:1">
+      <div class="field" style="margin-bottom:8px"><label>お名前</label><input id="gmName" value="${gm().name}"></div>
+      <div class="field" style="margin:0"><label>肩書き</label><input id="gmTitle" value="${gm().title||'ゲームマスター'}"></div>
+    </div>
+  </div>
+  <label class="ghostbtn" for="gmPhoto" style="display:block;text-align:center;margin-top:0">📷 写真を登録／変更</label>
+  <input id="gmPhoto" type="file" accept="image/*" class="hidden">
+  ${gm().photo?`<button class="ghostbtn dangerbtn" id="gmRemove">写真を削除</button>`:''}
+
+  <h3 style="margin-top:20px">チーム名の編集</h3>
   ${state.teams.map(t=>`<div class="field" style="display:flex;gap:8px;align-items:center;margin-bottom:7px">
      <span class="dot" style="background:${t.color}"></span>
      <input value="${t.name}" data-rename="${t.id}" style="flex:1">
@@ -758,6 +828,10 @@ function renderInfoPanel(){
   <button class="ghostbtn" id="saveNames">名前を保存</button>
   <button class="ghostbtn dangerbtn" id="resetScores">⚠ スコアを全てリセット</button>
   <button class="ghostbtn dangerbtn" id="resetAll">⚠ 全データを初期化</button>`;
+  document.getElementById('gmName').onchange=(e)=>{gm().name=e.target.value.trim()||'藤沼';state.gameMaster=gm();save();renderAll();};
+  document.getElementById('gmTitle').onchange=(e)=>{state.gameMaster=gm();state.gameMaster.title=e.target.value.trim()||'ゲームマスター';save();renderAll();};
+  document.getElementById('gmPhoto').onchange=(e)=>{const f=e.target.files[0];if(f)setHostPhoto(f);};
+  const rm=document.getElementById('gmRemove');if(rm)rm.onclick=()=>{state.gameMaster=gm();state.gameMaster.photo=null;save();renderAll();};
   panel.querySelectorAll('[data-rename]').forEach(inp=>inp.onchange=()=>{const t=team(+inp.dataset.rename);if(t)t.name=inp.value;save();});
   document.getElementById('saveNames').onclick=()=>{save();renderAll();};
   document.getElementById('resetScores').onclick=()=>{if(confirm('全チームのスコアを0に戻します。よろしいですか？')){state.teams.forEach(t=>t.score=0);state.log=[];prevRanks={};save();renderAll();}};
