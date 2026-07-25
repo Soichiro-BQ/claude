@@ -243,6 +243,28 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
 .quiz-intro-body{font-size:clamp(14px,1.7vw,21px);line-height:1.9;text-align:left;max-width:92%;margin:16px auto 0;font-weight:600}
 .quiz-emph{color:#7a1f0f;font-weight:900}
 @media(max-width:640px){.q-seal{width:66px;height:66px;top:-14px}.q-seal b{font-size:20px}.parchment::before{inset:8px}}
+
+/* ---------- チャレンジ種目ルーレット ---------- */
+.roulette-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:500px;gap:16px}
+.roulette-title{font-size:clamp(22px,3vw,38px);font-weight:900;
+  background:linear-gradient(90deg,#ffd23f,#ff6b6b);-webkit-background-clip:text;background-clip:text;color:transparent}
+.wheel-wrap{position:relative;width:min(60vh,400px);aspect-ratio:1}
+.wheel-pointer{position:absolute;top:-4px;left:50%;transform:translateX(-50%);z-index:6;width:0;height:0;
+  border-left:19px solid transparent;border-right:19px solid transparent;border-top:34px solid #ffd23f;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+.wheel{width:100%;height:100%;border-radius:50%;border:8px solid #ffd23f;position:relative;
+  box-shadow:0 0 40px rgba(255,210,63,.35),inset 0 0 34px rgba(0,0,0,.45)}
+.wheel-hub{position:absolute;top:50%;left:50%;width:54px;height:54px;border-radius:50%;transform:translate(-50%,-50%);
+  background:radial-gradient(circle at 40% 35%,#fff,#c9c9c9);border:4px solid #ffd23f;z-index:4}
+.roulette-result{font-size:clamp(24px,4.5vw,54px);font-weight:900;color:var(--accent);min-height:58px;display:flex;align-items:center}
+.roulette-legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:92%}
+.rl-item{display:flex;align-items:center;gap:7px;font-size:clamp(12px,1.5vw,16px);font-weight:800;
+  background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:22px;padding:5px 14px;color:var(--muted)}
+.rl-item.win{background:rgba(255,210,63,.22);border-color:var(--accent);color:#fff;box-shadow:0 0 16px rgba(255,210,63,.3)}
+.rl-sw{width:13px;height:13px;border-radius:4px;flex:none}
+
+/* 投影URL入力欄 */
+.urlin{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:9px;border-radius:8px;font-size:12px}
 .footer{grid-column:1/-1;text-align:center;color:var(--muted);font-size:12px;padding:6px}
 
 /* ---------- スマホ・タブレット対応 ---------- */
@@ -376,7 +398,10 @@ const MAX_TOTAL = 300; // 1チーム最大（クイズ100 + イラスト150 + �
    ================================================================ */
 const KEY='rectool.state.v4';
 const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('rectool') : null;
-const isPresent = new URLSearchParams(location.search).get('view')==='present';
+// 投影モード判定：URLに #present（推奨・Artifactでも動作）または ?view=present
+const isPresent = location.hash.replace(/^#/,'')==='present' || new URLSearchParams(location.search).get('view')==='present';
+function baseURL(){return location.href.split('#')[0];}
+function presentURL(){return baseURL()+'#present';}
 
 function freshState(){
   return {
@@ -386,19 +411,32 @@ function freshState(){
     timer: {endsAt:null, remaining:30000, running:false, duration:30000},
     topic: {flatIndex:0, revealed:false},
     quiz: {view:'intro', index:0, revealed:false},
+    roulette: {spinId:0, resultIndex:null, revealed:false},
     gacha: {spinId:0, result:null, winnerTeamId:null, spinning:false},
-    prizes: [
-      {id:'p1',name:'Amazonギフト券 3,000円',qty:1},
-      {id:'p2',name:'ちょっと良いお菓子詰め合わせ',qty:2},
-      {id:'p3',name:'ドリンクチケット',qty:3},
-      {id:'p4',name:'ハズレなしステッカー',qty:5},
-    ],
+    prizes: defaultPrizes(),
+    prizesVersion: PRIZES_VERSION,
     gameMaster: {name:'藤沼', title:'ゲームマスター', photo:null},
   };
 }
+// ガチャ景品（添付「当たりくじ」16品／各1個）
+const PRIZES_VERSION = 2;
+function defaultPrizes(){
+  return [
+    'Air Jordan','テンピュール','AirTag','CASIO F-91W',
+    'カップヌードル','HARIBO','Nutella','Post-it',
+    'ギネス世界記録2026','ディズニーチケット','深海生物図鑑＋深煎りコーヒーギフト','リンベル 海鮮グルメギフト',
+    'シロナガスクジラぬいぐるみ＋大判ブランケット','ORO BAILEN ピクアル オリーブオイル','LUPICIA 中国茶セット','スタバカード',
+  ].map((name,i)=>({id:'p'+(i+1),name,qty:1}));
+}
 let state = load();
 function load(){
-  try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.teams){ if(!s.gameMaster)s.gameMaster={name:'藤沼',title:'ゲームマスター',photo:null}; if(!s.quiz)s.quiz={view:'intro',index:0,revealed:false}; return s; }}catch(e){}
+  try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.teams){
+    if(!s.gameMaster)s.gameMaster={name:'藤沼',title:'ゲームマスター',photo:null};
+    if(!s.quiz)s.quiz={view:'intro',index:0,revealed:false};
+    if(!s.roulette)s.roulette={spinId:0,resultIndex:null,revealed:false};
+    if(s.prizesVersion!==PRIZES_VERSION){s.prizes=defaultPrizes();s.prizesVersion=PRIZES_VERSION;} // 景品を最新16品へ更新
+    return s;
+  }}catch(e){}
   return freshState();
 }
 function save(broadcast=true){
@@ -509,9 +547,10 @@ function renderStage(){
   if(sc!=='timer')stopTimerRaf(); // 他シーンへ移ったらタイマー描画ループを止める
   renderHostBadge(sc);
   document.getElementById('stage').classList.toggle('quiz-scene', sc==='quiz');
-  stageLabel.textContent=({scoreboard:'SCOREBOARD',quiz:'QUIZ',timer:'TIMER',topic:'ILLUST QUIZ',gacha:'PRIZE GACHA',result:'FINAL RESULT'})[sc]||'';
+  stageLabel.textContent=({scoreboard:'SCOREBOARD',quiz:'QUIZ',roulette:'ROULETTE',timer:'TIMER',topic:'ILLUST QUIZ',gacha:'PRIZE GACHA',result:'FINAL RESULT'})[sc]||'';
   if(sc==='scoreboard'){renderScoreboard();}
   else if(sc==='quiz'){renderQuizStage();}
+  else if(sc==='roulette'){renderRouletteStage();}
   else if(sc==='timer'){renderTimerStage();}
   else if(sc==='topic'){renderTopicStage();}
   else if(sc==='gacha'){renderGachaStage();}
@@ -592,6 +631,49 @@ function renderQuizStage(){
       ${inner}
     </div></div>`;
   }
+}
+
+/* ---- Roulette stage（チャレンジ種目ルーレット） ---- */
+const ROULETTE_COLORS=['#ff6b6b','#4da3ff','#33d69f','#ffa53d','#c084fc'];
+let lastRouletteShown=0;
+function renderRouletteStage(){
+  const r=state.roulette||{spinId:0,resultIndex:null,revealed:false};
+  const n=CHALLENGES.length, seg=360/n;
+  const grad=ROULETTE_COLORS.slice(0,n).map((c,i)=>`${c} ${i*seg}deg ${(i+1)*seg}deg`).join(',');
+  const legend=CHALLENGES.map((c,i)=>`<div class="rl-item ${r.revealed&&r.resultIndex===i?'win':''}"><span class="rl-sw" style="background:${ROULETTE_COLORS[i%ROULETTE_COLORS.length]}"></span>${i+1}. ${c}</div>`).join('');
+  const result=(r.revealed&&r.resultIndex!=null)
+    ? `<div class="roulette-result">🎯 ${CHALLENGES[r.resultIndex]}！</div>`
+    : `<div class="roulette-result" style="color:var(--muted)">${r.spinId?'　':'「ルーレットを回す」で種目を決定'}</div>`;
+  stageBody.innerHTML=`<div class="roulette-stage">
+    <div class="roulette-title">🎯 チャレンジ種目ルーレット</div>
+    <div class="wheel-wrap"><div class="wheel-pointer"></div>
+      <div class="wheel" id="wheelEl" style="background:conic-gradient(${grad})"><div class="wheel-hub"></div></div>
+    </div>
+    ${result}
+    <div class="roulette-legend">${legend}</div>
+  </div>`;
+  const wheel=document.getElementById('wheelEl');if(!wheel)return;
+  const restDeg=(i)=>360*6-(i*seg+seg/2); // 勝ちセグメント中心を上（ポインター）へ
+  if(r.spinId>lastRouletteShown && r.resultIndex!=null){
+    lastRouletteShown=r.spinId;
+    wheel.style.transition='none';wheel.style.transform='rotate(0deg)';void wheel.offsetHeight;
+    if(!isPresent)SFX.drum();
+    wheel.style.transition='transform 4s cubic-bezier(.12,.72,.14,1)';
+    wheel.style.transform=`rotate(${restDeg(r.resultIndex)}deg)`;
+    setTimeout(()=>{
+      if(!isPresent){SFX.win();}
+      confetti(160);
+      if(state.roulette&&state.roulette.spinId===r.spinId){ state.roulette.revealed=true; if(!isPresent)save(); }
+      if(state.scene==='roulette')renderRouletteStage();
+    },4050);
+  }else if(r.resultIndex!=null){
+    wheel.style.transition='none';wheel.style.transform=`rotate(${restDeg(r.resultIndex)}deg)`;
+  }
+}
+function spinRoulette(){
+  const i=Math.floor(Math.random()*CHALLENGES.length);
+  state.roulette={spinId:(state.roulette?.spinId||0)+1, resultIndex:i, revealed:false};
+  state.scene='roulette';save();renderAll();
 }
 
 /* ---- Timer stage (self-running from shared endsAt) ---- */
@@ -694,7 +776,7 @@ document.getElementById('tabs').addEventListener('click',e=>{
 });
 
 function sceneButtons(active){
-  const scenes=[['scoreboard','🏆 得点表'],['quiz','📜 クイズ'],['timer','⏱ タイマー'],['topic','🎨 お題'],['gacha','🎁 ガチャ'],['result','🎉 結果発表']];
+  const scenes=[['scoreboard','🏆 得点表'],['quiz','📜 クイズ'],['roulette','🎯 ルーレット'],['timer','⏱ タイマー'],['topic','🎨 お題'],['gacha','🎁 ガチャ'],['result','🎉 結果発表']];
   return `<div class="scene-btns">`+scenes.map(([k,l])=>
     `<button class="scene-btn ${state.scene===k?'active':''}" data-scene="${k}">${l}</button>`).join('')+`</div>`;
 }
@@ -736,6 +818,14 @@ function renderScorePanel(){
         <button class="pbtn" data-custom="${t.id}">加算</button></div>
     </div>`;
   });
+  // Challenge roulette
+  const rv=state.roulette||{};
+  h+=`<div class="teamctl" style="border-color:var(--accent)">
+    <div class="teamctl-head"><span class="teamctl-name">🎯 チャレンジ種目ルーレット</span></div>
+    <div class="hint" style="margin:6px 0">5種目（腕相撲・片足立ち・だるまさんが転んだ・10秒ストップ・早飲み対決）からランダムで種目を決定。投影にルーレット演出が表示されます。</div>
+    <button class="bigbtn spin" id="spinRouletteBtn">🎯 ルーレットを回す</button>
+    ${rv.revealed&&rv.resultIndex!=null?`<div class="mini">今回の種目：<b style="color:var(--accent)">${CHALLENGES[rv.resultIndex]}</b></div>`:''}
+  </div>`;
   // Challenge rank tool
   h+=`<div class="teamctl" style="border-color:var(--accent)">
     <div class="teamctl-head"><span class="teamctl-name">🥊 チャレンジゲーム 順位入力</span></div>
@@ -759,6 +849,7 @@ function renderScorePanel(){
     const id=+b.dataset.custom;const v=parseInt(document.getElementById('cst'+id).value,10);
     if(!isNaN(v)&&v!==0){addPoints(id,v,'手動加算');}
   });
+  document.getElementById('spinRouletteBtn').onclick=spinRoulette;
   document.getElementById('applyRank').onclick=()=>{
     const comp=document.getElementById('chSel').value;let any=false;
     for(let i=0;i<5;i++){const v=document.getElementById('rk'+i).value;
@@ -947,7 +1038,17 @@ function renderInfoPanel(){
     ['21:35-21:55','チャレンジゲーム 5種目','1人1種の5競技'],
     ['21:55-22:00','総合結果・景品発表','表彰・写真撮影'],
   ];
-  panel.innerHTML=`<h3>📋 進行・設定</h3>
+  panel.innerHTML=`<h3>🖥 投影用URL / 操作用URL</h3>
+  <div id="urlBox" style="border:1px solid var(--accent);border-radius:12px;padding:13px;margin-bottom:18px;background:rgba(255,210,63,.06)">
+    <div class="hint" style="margin-bottom:10px">同じPCで下の2つを<b>別タブ（別ウィンドウ）</b>で開き、<b>投影用</b>をモニターへ移すとリアルタイムで同期します。（「投影画面を開く」が反応しない場合はこのURLをコピーして新しいタブで開いてください）</div>
+    <label class="mini" style="font-weight:800">🎮 操作用（この画面）</label>
+    <div style="display:flex;gap:6px;margin:4px 0 10px"><input class="urlin" id="urlAdmin" readonly value="${baseURL()}"><button class="pbtn" data-copy="admin">コピー</button></div>
+    <label class="mini" style="font-weight:800">📺 投影用（#present）</label>
+    <div style="display:flex;gap:6px;margin:4px 0"><input class="urlin" id="urlPresent" readonly value="${presentURL()}"><button class="pbtn" data-copy="present">コピー</button></div>
+    <a class="ghostbtn" style="display:block;text-align:center;margin-top:10px" href="${presentURL()}" target="_blank" rel="noopener">📺 投影画面を新しいタブで開く</a>
+    <div class="mini" style="margin-top:8px">※ スマホ等の別デバイスで開いた場合は同期しません（同一ブラウザ内でのみ同期）。当日の本番はダウンロードした index.html を2つのウィンドウで開くのが最も確実です。</div>
+  </div>
+  <h3>📋 進行・設定</h3>
   <div class="hint">当日の進行表（90分想定）。下部でチーム名の編集・スコアのリセットができます。</div>
   <div style="border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:16px">
     ${tt.map(r=>`<div class="tt-row"><span class="tt-time">${r[0]}</span><span><b>${r[1]}</b><div class="mini">${r[2]}</div></span></div>`).join('')}
@@ -980,6 +1081,13 @@ function renderInfoPanel(){
   <button class="ghostbtn" id="saveNames">名前を保存</button>
   <button class="ghostbtn dangerbtn" id="resetScores">⚠ スコアを全てリセット</button>
   <button class="ghostbtn dangerbtn" id="resetAll">⚠ 全データを初期化</button>`;
+  panel.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{
+    const inp=document.getElementById(b.dataset.copy==='present'?'urlPresent':'urlAdmin');
+    inp.focus();inp.select();
+    let ok=false;try{ok=document.execCommand('copy');}catch(e){}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(inp.value).catch(()=>{});}
+    const o=b.textContent;b.textContent='✓ コピー';setTimeout(()=>b.textContent=o,1200);
+  });
   document.getElementById('gmName').onchange=(e)=>{gm().name=e.target.value.trim()||'藤沼';state.gameMaster=gm();save();renderAll();};
   document.getElementById('gmTitle').onchange=(e)=>{state.gameMaster=gm();state.gameMaster.title=e.target.value.trim()||'ゲームマスター';save();renderAll();};
   document.getElementById('gmPhoto').onchange=(e)=>{const f=e.target.files[0];if(f)setHostPhoto(f);};
@@ -994,7 +1102,13 @@ function renderInfoPanel(){
    TOP BUTTONS
    ================================================================ */
 document.getElementById('btnPresent').onclick=()=>{
-  window.open(location.pathname+'?view=present','rectool_present','width=1280,height=800');
+  let w=null; try{w=window.open(presentURL(),'rectool_present','width=1280,height=800');}catch(e){}
+  if(!w){ // ポップアップが開けない環境（claude.ai上のArtifact等）→ URL案内へ誘導
+    curTab='info';
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='info'));
+    renderPanel();
+    const box=document.getElementById('urlBox'); if(box){box.scrollIntoView({behavior:'smooth',block:'center'});box.style.animation='flashUp 1.2s';}
+  }
 };
 document.getElementById('btnFull').onclick=()=>{
   const el=document.getElementById('stage');
